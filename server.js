@@ -33,13 +33,13 @@ const adminOnly = (req, res, next) =>
   req.user?.isAdmin ? next() : res.status(403).json({ error: 'Admin only' });
 
 // ─────────────────────────────────────────────
-// ELO ENGINE
+// ELO ENGINE  (1–100 scale, start 50)
 // ─────────────────────────────────────────────
 
 function calcElo(ids, won, avgRatings) {
   const N = ids.length;
   if (N < 2) return {};
-  const BASE = 12, K = (N - 1) * 4;
+  const BASE = 2, K = (N - 1);
 
   const sorted = [...ids].sort((a, b) => (avgRatings[b] || 3) - (avgRatings[a] || 3));
   const ranks  = {};
@@ -92,7 +92,7 @@ async function finalizeGame(gameId) {
     const change = eloChanges[pid] || 0;
     const col    = won ? 'wins' : 'losses';
     await pool.query(
-      `UPDATE players SET elo = elo + $1, games = games + 1, ${col} = ${col} + 1 WHERE id = $2`,
+      `UPDATE players SET elo = GREATEST(1, LEAST(100, elo + $1)), games = games + 1, ${col} = ${col} + 1 WHERE id = $2`,
       [change, pid]
     );
   }
@@ -113,12 +113,13 @@ async function finalizeGame(gameId) {
 async function initDB() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS players (
-      id     SERIAL PRIMARY KEY,
-      name   TEXT    NOT NULL,
-      elo    INTEGER DEFAULT 1000,
-      wins   INTEGER DEFAULT 0,
-      losses INTEGER DEFAULT 0,
-      games  INTEGER DEFAULT 0
+      id      SERIAL  PRIMARY KEY,
+      name    TEXT    NOT NULL,
+      elo     INTEGER DEFAULT 50,
+      wins    INTEGER DEFAULT 0,
+      losses  INTEGER DEFAULT 0,
+      games   INTEGER DEFAULT 0,
+      riot_id TEXT
     );
     CREATE TABLE IF NOT EXISTS users (
       id        SERIAL  PRIMARY KEY,
@@ -143,12 +144,16 @@ async function initDB() {
     );
   `);
 
+  // Migrations for existing installs
+  await pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS riot_id TEXT`);
+  await pool.query(`UPDATE players SET elo = 50 WHERE elo = 1000 AND games = 0`);
+
   const { rows } = await pool.query('SELECT COUNT(*) AS c FROM players');
   if (parseInt(rows[0].c) === 0) {
     const names = ['Aryan', 'Mateo', 'Joey', 'Jay', 'Max', 'Tommy', 'Ethan'];
     for (let i = 0; i < names.length; i++) {
       const { rows: pr } = await pool.query(
-        'INSERT INTO players (name) VALUES ($1) RETURNING id', [names[i]]
+        'INSERT INTO players (name, elo) VALUES ($1, 50) RETURNING id', [names[i]]
       );
       await pool.query(
         `INSERT INTO users (username, name, password, is_admin, player_id)
@@ -175,7 +180,7 @@ app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     const { rows } = await pool.query(
-      `SELECT u.*, p.id AS pid
+      `SELECT u.*, p.id AS pid, p.riot_id
        FROM users u JOIN players p ON u.player_id = p.id
        WHERE u.username = $1`,
       [username?.toLowerCase().trim()]
@@ -189,7 +194,7 @@ app.post('/api/login', async (req, res) => {
       SECRET,
       { expiresIn: '30d' }
     );
-    res.json({ token, id: u.pid, name: u.name, isAdmin: u.is_admin });
+    res.json({ token, id: u.pid, name: u.name, isAdmin: u.is_admin, riotId: u.riot_id || '' });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
@@ -197,8 +202,9 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Current user info
-app.get('/api/me', auth, (req, res) => {
-  res.json({ id: req.user.id, name: req.user.name, isAdmin: req.user.isAdmin });
+app.get('/api/me', auth, async (req, res) => {
+  const { rows } = await pool.query('SELECT riot_id FROM players WHERE id = $1', [req.user.id]);
+  res.json({ id: req.user.id, name: req.user.name, isAdmin: req.user.isAdmin, riotId: rows[0]?.riot_id || '' });
 });
 
 // Full app state
@@ -327,6 +333,88 @@ app.post('/api/password/reset', auth, adminOnly, async (req, res) => {
   const r = await pool.query('UPDATE users SET password = $1 WHERE player_id = $2', [newPassword, Number(playerId)]);
   if (r.rowCount === 0) return res.status(404).json({ error: 'Player not found' });
   res.json({ ok: true });
+});
+
+// Set own Riot ID
+app.post('/api/player/riot-id', auth, async (req, res) => {
+  const { riotId } = req.body;
+  if (!riotId || !riotId.includes('#'))
+    return res.status(400).json({ error: 'Riot ID must be in format Name#Tag (e.g. Aryan#NA1)' });
+  await pool.query('UPDATE players SET riot_id = $1 WHERE id = $2', [riotId.trim(), req.user.id]);
+  res.json({ ok: true });
+});
+
+// Admin: set any player's Riot ID
+app.post('/api/player/riot-id/admin', auth, adminOnly, async (req, res) => {
+  const { playerId, riotId } = req.body;
+  if (!riotId || !riotId.includes('#'))
+    return res.status(400).json({ error: 'Riot ID must be in format Name#Tag (e.g. Aryan#NA1)' });
+  const r = await pool.query('UPDATE players SET riot_id = $1 WHERE id = $2', [riotId.trim(), Number(playerId)]);
+  if (r.rowCount === 0) return res.status(404).json({ error: 'Player not found' });
+  res.json({ ok: true });
+});
+
+// Admin: sync last match from Henrik Dev API
+app.get('/api/match/sync', auth, adminOnly, async (req, res) => {
+  try {
+    const { rows: allPlayers } = await pool.query('SELECT * FROM players');
+    const playersWithId = allPlayers.filter(p => p.riot_id && p.riot_id.includes('#'));
+
+    if (playersWithId.length === 0)
+      return res.status(400).json({ error: 'No Riot IDs set yet. Add at least one Riot ID first (🎯 button).' });
+
+    const region = process.env.VALORANT_REGION || 'na';
+    const [name, tag] = playersWithId[0].riot_id.split('#');
+
+    const headers = { 'User-Agent': 'val-elo/1.0' };
+    if (process.env.HENRIK_API_KEY) headers['Authorization'] = process.env.HENRIK_API_KEY;
+
+    const url = `https://api.henrikdev.xyz/valorant/v3/matches/${region}/${encodeURIComponent(name)}/${encodeURIComponent(tag)}?size=1`;
+    const apiRes = await fetch(url, { headers });
+
+    if (!apiRes.ok) {
+      const errData = await apiRes.json().catch(() => ({}));
+      return res.status(502).json({ error: errData.errors?.[0]?.message || `Henrik API error (${apiRes.status}) — check Riot ID is correct` });
+    }
+
+    const data = await apiRes.json();
+    const match = data.data?.[0];
+    if (!match) return res.status(404).json({ error: 'No recent matches found for that Riot ID' });
+
+    const matchPlayers = match.players?.all_players || [];
+
+    // Find which registered players were in this match
+    const participants = allPlayers.filter(p => {
+      if (!p.riot_id) return false;
+      const [pName, pTag] = p.riot_id.split('#');
+      return matchPlayers.some(mp =>
+        mp.name?.toLowerCase() === pName?.toLowerCase() &&
+        mp.tag?.toLowerCase()  === pTag?.toLowerCase()
+      );
+    });
+
+    if (participants.length < 2)
+      return res.status(400).json({ error: `Only ${participants.length} registered player(s) found in that match. Set more Riot IDs first.` });
+
+    // Determine win/loss for our team
+    const [p1Name, p1Tag] = participants[0].riot_id.split('#');
+    const p1Data = matchPlayers.find(mp =>
+      mp.name?.toLowerCase() === p1Name?.toLowerCase() &&
+      mp.tag?.toLowerCase()  === p1Tag?.toLowerCase()
+    );
+    const ourTeam = p1Data?.team?.toLowerCase(); // 'red' or 'blue'
+    const won = match.teams?.[ourTeam]?.has_won === true;
+
+    res.json({
+      participants: participants.map(p => ({ id: p.id, name: p.name })),
+      won,
+      map:  match.metadata?.map  || 'Unknown',
+      mode: match.metadata?.mode || '',
+    });
+  } catch (e) {
+    console.error('Sync error:', e);
+    res.status(500).json({ error: 'Server error: ' + e.message });
+  }
 });
 
 // ─────────────────────────────────────────────

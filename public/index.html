@@ -116,8 +116,7 @@
     .rank-num { font-size: 18px; font-weight: 900; text-align: center; }
     .rank-1 { color: #ffd700; } .rank-2 { color: #c0c0c0; } .rank-3 { color: #cd7f32; } .rank-other { color: var(--dim); }
     .player-name { font-size: 15px; font-weight: 600; }
-    .player-tier { font-size: 11px; font-weight: 700; margin-top: 1px; }
-    .elo-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 5px; }
+    .elo-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 6px; }
     .elo-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--orange), var(--red)); transition: width .6s ease; }
     .elo-col { text-align: right; }
     .elo-num { font-size: 20px; font-weight: 800; color: var(--orange); }
@@ -193,6 +192,7 @@
     .pass-field label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); margin-bottom: 5px; }
     .pass-input { width: 100%; background: var(--card2); border: 1px solid var(--border); border-radius: 4px; padding: 9px 13px; color: var(--text); font-size: 14px; outline: none; transition: border-color .15s; }
     .pass-input:focus { border-color: var(--red); }
+    .modal-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 
     /* ── TOAST ── */
     .toast { position: fixed; bottom: 22px; right: 22px; background: var(--card2); border: 1px solid var(--border); border-left: 3px solid var(--green); padding: 11px 17px; border-radius: 6px; font-size: 13px; font-weight: 500; z-index: 1000; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; }
@@ -241,6 +241,7 @@
     <div class="header-right">
       <span class="user-label" id="headerUser"></span>
       <button id="btnNewGame" class="btn btn-primary btn-sm" onclick="openNewGame()" hidden>+ New Game</button>
+      <button class="btn-ghost" onclick="openRiotId()" title="Set Riot ID">🎯</button>
       <button class="btn-ghost" onclick="openChangePass()" title="Change Password">🔑</button>
       <button id="btnResetPass" class="btn-ghost" onclick="openResetPass()" title="Reset a player's password" hidden>🛡</button>
       <button class="btn-ghost" onclick="doLogout()" title="Logout">⏻</button>
@@ -372,6 +373,38 @@
     </div>
   </div>
 
+  <!-- Riot ID modal -->
+  <div id="M-riotid" class="modal" hidden>
+    <div class="modal-head">
+      <span class="modal-title">Riot ID</span>
+      <button class="btn-ghost" onclick="closeModals()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-label">Your Riot ID is used to auto-sync match results from Valorant.</div>
+      <div class="pass-field">
+        <label>Your Riot ID</label>
+        <input class="pass-input" type="text" id="ri-self" placeholder="e.g. Aryan#NA1">
+      </div>
+      <div id="ri-admin-section" hidden>
+        <hr class="modal-divider">
+        <div class="modal-label" style="margin-bottom:10px;color:var(--orange)">Admin — set any player's Riot ID</div>
+        <div class="pass-field">
+          <label>Player</label>
+          <select class="pass-input" id="ri-player"></select>
+        </div>
+        <div class="pass-field">
+          <label>Their Riot ID</label>
+          <input class="pass-input" type="text" id="ri-other" placeholder="e.g. Mateo#NA1">
+        </div>
+        <button class="btn btn-secondary btn-full" onclick="submitAdminRiotId()" style="margin-top:4px">Set Player's Riot ID</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitRiotId()">Save My Riot ID</button>
+    </div>
+  </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -381,7 +414,7 @@
 // STATE
 // ─────────────────────────────────────────────
 
-let ME   = null;   // { id, name, isAdmin }
+let ME   = null;   // { id, name, isAdmin, riotId }
 let DATA = null;   // { players, games, pendingGame }
 let TOKEN = localStorage.getItem('val-elo-token');
 let pollTimer = null;
@@ -432,7 +465,7 @@ async function doLogin() {
   try {
     const res = await api('POST', '/api/login', { username, password });
     TOKEN = res.token;
-    ME    = { id: res.id, name: res.name, isAdmin: res.isAdmin };
+    ME    = { id: res.id, name: res.name, isAdmin: res.isAdmin, riotId: res.riotId || '' };
     localStorage.setItem('val-elo-token', TOKEN);
     await fetchState();
     showApp();
@@ -488,18 +521,6 @@ function stopPolling()  { clearInterval(pollTimer); pollTimer = null; }
 // RENDER
 // ─────────────────────────────────────────────
 
-const TIERS = [
-  { min: 1400, name: 'Radiant',   color: '#ffd700' },
-  { min: 1300, name: 'Immortal',  color: '#ff4655' },
-  { min: 1200, name: 'Ascendant', color: '#00c896' },
-  { min: 1100, name: 'Diamond',   color: '#88c0d0' },
-  { min: 1000, name: 'Platinum',  color: '#5e81ac' },
-  { min:  900, name: 'Gold',      color: '#ff9c3f' },
-  { min:  800, name: 'Silver',    color: '#c0c0c0' },
-  { min:    0, name: 'Bronze',    color: '#cd7f32' },
-];
-function getTier(elo) { return TIERS.find(t => elo >= t.min) || TIERS[TIERS.length - 1]; }
-
 // Safe lookup for JSONB fields (keys may be strings or numbers)
 function gv(obj, id) { return obj?.[id] ?? obj?.[String(id)] ?? obj?.[Number(id)]; }
 
@@ -549,7 +570,6 @@ function renderAdminPanel() {
 
   document.getElementById('admin-progress').textContent = `${done}/${total} rated`;
 
-  // Game info row
   const participantNames = pg.participants.map(id => {
     const p = DATA.players.find(p => Number(p.id) === Number(id));
     return p ? p.name : `#${id}`;
@@ -562,7 +582,6 @@ function renderAdminPanel() {
     <span style="font-size:13px;color:var(--dim)">${participantNames}</span>
   `;
 
-  // Rater progress list
   document.getElementById('admin-rater-list').innerHTML = pg.participants.map(id => {
     const p       = DATA.players.find(p => Number(p.id) === Number(id));
     const name    = p ? p.name : `#${id}`;
@@ -577,25 +596,21 @@ function renderAdminPanel() {
 }
 
 function renderLeaderboard() {
-  const sorted  = [...DATA.players].sort((a, b) => b.elo - a.elo);
-  const maxElo  = Math.max(...DATA.players.map(p => p.elo));
-  const baseElo = 700;
+  const sorted = [...DATA.players].sort((a, b) => b.elo - a.elo);
 
   document.getElementById('gameCountLabel').textContent =
     `${DATA.games.length} game${DATA.games.length !== 1 ? 's' : ''} played`;
 
   document.getElementById('leaderboard').innerHTML = sorted.map((p, i) => {
-    const rank  = i + 1;
-    const t     = getTier(p.elo);
-    const icon  = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
-    const cls   = rank <= 3 ? `rank-${rank}` : 'rank-other';
-    const barW  = Math.max(6, Math.min(100, (p.elo - baseElo) / (maxElo - baseElo + 1) * 100));
+    const rank = i + 1;
+    const icon = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+    const cls  = rank <= 3 ? `rank-${rank}` : 'rank-other';
+    const barW = Math.max(2, Math.min(100, p.elo)); // elo is 1–100
     return `
       <div class="lb-row">
         <div class="rank-num ${cls}">${icon}</div>
         <div>
           <div class="player-name">${esc(p.name)}</div>
-          <div class="player-tier" style="color:${t.color}">${t.name}</div>
           <div class="elo-bar-wrap"><div class="elo-bar-fill" style="width:${barW}%"></div></div>
         </div>
         <div class="elo-col">
@@ -651,7 +666,7 @@ function renderHistory() {
 
 function showModal(id) {
   document.getElementById('overlay').hidden = false;
-  ['rating','newgame','changepass','resetpass'].forEach(m =>
+  ['rating','newgame','changepass','resetpass','riotid'].forEach(m =>
     document.getElementById(`M-${m}`).hidden = (m !== id)
   );
 }
@@ -735,7 +750,12 @@ function openNewGame() {
   ngParticipants = new Set();
   ngWon = null;
   document.getElementById('newgame-body').innerHTML = `
-    <div class="modal-label">Select who played this match</div>
+    <div style="margin-bottom:14px">
+      <button id="ng-sync-btn" class="btn btn-secondary btn-full" onclick="syncMatch()">🔄 Auto-fill from Valorant</button>
+      <div style="font-size:11px;color:var(--dim);text-align:center;margin-top:5px">Fetches your group's last match (requires Riot IDs set via 🎯)</div>
+    </div>
+    <hr class="modal-divider" style="margin-bottom:14px">
+    <div class="modal-label">Or select manually who played this match</div>
     <div class="sel-row">
       <span class="sel-link" onclick="ngSelAll(true)">Select all</span>
       <span class="sel-link" onclick="ngSelAll(false)">Clear</span>
@@ -745,7 +765,7 @@ function openNewGame() {
         <div class="pcheck" id="ngp-${p.id}" onclick="ngToggle(${p.id})">
           <div class="check-box" id="ngc-${p.id}"></div>
           <span class="pcheck-name">${esc(p.name)}</span>
-          <span class="pcheck-elo">${p.elo} ELO</span>
+          <span class="pcheck-elo">${p.elo}</span>
         </div>`).join('')}
     </div>
     <div style="margin-top:16px">
@@ -784,6 +804,46 @@ function ngSetWon(v) {
   ngWon = v;
   document.getElementById('ng-win').classList.toggle('sel',  v === true);
   document.getElementById('ng-loss').classList.toggle('sel', v === false);
+}
+
+async function syncMatch() {
+  const btn = document.getElementById('ng-sync-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">⟳</span> Syncing...';
+  try {
+    const result = await api('GET', '/api/match/sync');
+
+    // Clear existing selections
+    ngParticipants = new Set();
+    DATA.players.forEach(p => {
+      const wrap = document.getElementById(`ngp-${p.id}`);
+      const box  = document.getElementById(`ngc-${p.id}`);
+      if (wrap) wrap.classList.remove('sel');
+      if (box)  box.textContent = '';
+    });
+
+    // Apply synced participants
+    for (const p of result.participants) {
+      ngParticipants.add(p.id);
+      const wrap = document.getElementById(`ngp-${p.id}`);
+      const box  = document.getElementById(`ngc-${p.id}`);
+      if (wrap) wrap.classList.add('sel');
+      if (box)  box.textContent = '✓';
+    }
+
+    // Apply outcome
+    ngSetWon(result.won);
+
+    const mapInfo = result.map !== 'Unknown' ? ` · ${result.map}` : '';
+    document.getElementById('ng-count').textContent =
+      `${ngParticipants.size} players synced${mapInfo}`;
+    toast(`✓ Synced! ${result.participants.length} players found.`);
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔄 Auto-fill from Valorant';
+  }
 }
 
 async function submitNewGame() {
@@ -858,6 +918,53 @@ async function submitResetPass() {
     closeModals();
     const name = DATA.players.find(p => Number(p.id) === Number(playerId))?.name || 'Player';
     toast(`Password reset for ${name}`);
+  } catch (e) { toast(e.message, true); }
+}
+
+// ── Riot ID
+function openRiotId() {
+  document.getElementById('ri-self').value = ME.riotId || '';
+  const adminSection = document.getElementById('ri-admin-section');
+  if (ME.isAdmin) {
+    adminSection.hidden = false;
+    const sel = document.getElementById('ri-player');
+    sel.innerHTML = DATA.players.map(p =>
+      `<option value="${p.id}">${esc(p.name)}${p.riot_id ? ' (' + esc(p.riot_id) + ')' : ''}</option>`
+    ).join('');
+    document.getElementById('ri-other').value = '';
+  } else {
+    adminSection.hidden = true;
+  }
+  showModal('riotid');
+}
+
+async function submitRiotId() {
+  const riotId = document.getElementById('ri-self').value.trim();
+  if (!riotId) { closeModals(); return; } // allow clearing
+  if (!riotId.includes('#')) { toast('Format must be Name#Tag (e.g. Aryan#NA1)', true); return; }
+  try {
+    await api('POST', '/api/player/riot-id', { riotId });
+    ME.riotId = riotId;
+    closeModals();
+    toast('Riot ID saved!');
+  } catch (e) { toast(e.message, true); }
+}
+
+async function submitAdminRiotId() {
+  const playerId = document.getElementById('ri-player').value;
+  const riotId   = document.getElementById('ri-other').value.trim();
+  if (!riotId.includes('#')) { toast('Format must be Name#Tag (e.g. Mateo#NA1)', true); return; }
+  try {
+    await api('POST', '/api/player/riot-id/admin', { playerId: Number(playerId), riotId });
+    const p = DATA.players.find(p => Number(p.id) === Number(playerId));
+    if (p) p.riot_id = riotId;
+    // Refresh dropdown to show updated IDs
+    const sel = document.getElementById('ri-player');
+    sel.innerHTML = DATA.players.map(p =>
+      `<option value="${p.id}">${esc(p.name)}${p.riot_id ? ' (' + esc(p.riot_id) + ')' : ''}</option>`
+    ).join('');
+    document.getElementById('ri-other').value = '';
+    toast(`Riot ID set for ${p?.name || 'player'}!`);
   } catch (e) { toast(e.message, true); }
 }
 
