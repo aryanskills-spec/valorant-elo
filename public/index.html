@@ -50,11 +50,7 @@
     .err-msg { color: var(--red); font-size: 13px; margin-bottom: 12px; min-height: 18px; }
 
     /* ── BUTTONS ── */
-    .btn {
-      padding: 10px 18px; border: none; border-radius: 4px; cursor: pointer;
-      font-weight: 700; font-size: 13px; letter-spacing: 1px; text-transform: uppercase;
-      transition: all .15s;
-    }
+    .btn { padding: 10px 18px; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; transition: all .15s; }
     .btn-primary { background: var(--red); color: #fff; }
     .btn-primary:hover:not(:disabled) { background: var(--red2); transform: translateY(-1px); }
     .btn-primary:disabled { opacity: .5; cursor: default; }
@@ -68,33 +64,22 @@
     .btn-sm { padding: 6px 12px; font-size: 11px; }
 
     /* ── HEADER ── */
-    .header {
-      background: var(--card); border-bottom: 2px solid var(--red);
-      padding: 12px 20px; display: flex; align-items: center;
-      justify-content: space-between; position: sticky; top: 0; z-index: 100;
-    }
+    .header { background: var(--card); border-bottom: 2px solid var(--red); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
     .logo { font-size: 22px; font-weight: 900; letter-spacing: 5px; text-transform: uppercase; }
     .logo span { color: var(--red); }
     .header-right { display: flex; align-items: center; gap: 8px; }
     .user-label { font-size: 13px; color: var(--dim); font-weight: 600; }
 
-    /* ── MAIN ── */
-    .main { max-width: 860px; margin: 0 auto; padding: 22px 16px; }
+    /* ── MAIN LAYOUT ── */
+    .main { max-width: 1160px; margin: 0 auto; padding: 22px 16px; }
+    .top-section { margin-bottom: 0; }
+    .two-col { display: grid; grid-template-columns: 340px 1fr; gap: 22px; align-items: start; margin-top: 22px; }
+    @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
 
     /* ── BANNERS ── */
-    .banner {
-      border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    }
-    .banner-alert {
-      background: rgba(255,70,85,.12); border: 1px solid rgba(255,70,85,.4);
-      border-left: 4px solid var(--red);
-      animation: pulse-border 2s ease-in-out infinite;
-    }
-    @keyframes pulse-border {
-      0%,100% { border-left-color: var(--red); }
-      50%      { border-left-color: rgba(255,70,85,.35); }
-    }
+    .banner { border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .banner-alert { background: rgba(255,70,85,.12); border: 1px solid rgba(255,70,85,.4); border-left: 4px solid var(--red); animation: pulse-border 2s ease-in-out infinite; }
+    @keyframes pulse-border { 0%,100% { border-left-color: var(--red); } 50% { border-left-color: rgba(255,70,85,.35); } }
     .banner-ok  { background: rgba(76,175,80,.1);  border: 1px solid rgba(76,175,80,.35); border-left: 4px solid var(--green); }
     .banner-dim { background: rgba(255,255,255,.04); border: 1px solid var(--border); }
     .banner-text { font-size: 14px; font-weight: 600; }
@@ -106,24 +91,20 @@
     .card-label { font-size: 11px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--dim); }
 
     /* ── LEADERBOARD ── */
-    .lb-row {
-      display: grid; grid-template-columns: 44px 1fr 110px 80px;
-      align-items: center; gap: 10px; padding: 13px 20px;
-      border-bottom: 1px solid var(--border); transition: background .12s;
-    }
+    .lb-row { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--border); transition: background .12s; }
     .lb-row:last-child { border-bottom: none; }
     .lb-row:hover { background: var(--card2); }
-    .rank-num { font-size: 18px; font-weight: 900; text-align: center; }
-    .rank-1 { color: #ffd700; } .rank-2 { color: #c0c0c0; } .rank-3 { color: #cd7f32; } .rank-other { color: var(--dim); }
-    .player-name { font-size: 15px; font-weight: 600; }
-    .elo-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 6px; }
+    .rank-num { font-size: 16px; font-weight: 900; text-align: center; width: 30px; flex-shrink: 0; }
+    .rank-1 { color: #ffd700; } .rank-2 { color: #c0c0c0; } .rank-3 { color: #cd7f32; } .rank-other { color: var(--dim); font-size: 13px; }
+    .lb-info { flex: 1; min-width: 0; }
+    .player-name { font-size: 14px; font-weight: 600; }
+    .elo-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 5px; }
     .elo-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--orange), var(--red)); transition: width .6s ease; }
-    .elo-col { text-align: right; }
-    .elo-num { font-size: 20px; font-weight: 800; color: var(--orange); }
-    .elo-sub { font-size: 11px; color: var(--dim); margin-top: 1px; }
-    .wl-col { text-align: center; font-size: 13px; }
-    .wl-col .w { color: var(--green); font-weight: 700; }
-    .wl-col .l { color: var(--red);   font-weight: 700; }
+    .lb-right { text-align: right; flex-shrink: 0; }
+    .elo-num { font-size: 18px; font-weight: 800; color: var(--orange); }
+    .wl-small { font-size: 11px; color: var(--dim); margin-top: 1px; }
+    .wl-small .w { color: var(--green); font-weight: 700; }
+    .wl-small .l { color: var(--red); font-weight: 700; }
 
     /* ── ADMIN PANEL ── */
     .admin-game-info { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
@@ -133,19 +114,42 @@
     .rater-pending { color: var(--orange); }
     .admin-actions { display: flex; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--border); flex-wrap: wrap; }
 
-    /* ── HISTORY ── */
-    .hist-item { padding: 13px 20px; border-bottom: 1px solid var(--border); }
+    /* ── GAME HISTORY (rich cards) ── */
+    .hist-item { padding: 14px 18px; border-bottom: 1px solid var(--border); }
     .hist-item:last-child { border-bottom: none; }
-    .hist-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-    .hist-date { font-size: 12px; color: var(--dim); }
-    .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
-    .badge-win  { background: rgba(76,175,80,.18); color: var(--green); border: 1px solid rgba(76,175,80,.35); }
-    .badge-loss { background: rgba(255,70,85,.18);  color: var(--red);   border: 1px solid rgba(255,70,85,.35); }
+    .hist-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+    .hist-meta { flex: 1; }
+    .hist-date { font-size: 11px; color: var(--dim); display: block; margin-bottom: 3px; }
+    .hist-map  { font-size: 13px; font-weight: 700; color: var(--text); }
+    .hist-mode { font-size: 11px; color: var(--dim); margin-left: 6px; }
+    .hist-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .hist-score { font-size: 16px; font-weight: 800; color: var(--text); }
+
+    /* Stats table for synced games */
+    .stat-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .stat-table th { color: var(--dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 10px; padding: 4px 6px; text-align: left; border-bottom: 1px solid var(--border); }
+    .stat-table td { padding: 6px 6px; border-bottom: 1px solid rgba(42,58,74,.5); }
+    .stat-table tr:last-child td { border-bottom: none; }
+    .stat-table tr:hover td { background: rgba(255,255,255,.02); }
+    .stat-name   { font-weight: 700; font-size: 13px; }
+    .stat-agent  { color: var(--dim); }
+    .stat-kda    { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+    .stat-acs    { color: var(--orange); font-weight: 600; }
+    .kd-good  { color: var(--green); }
+    .kd-bad   { color: var(--red); }
+    .kd-even  { color: var(--dim); }
+
+    /* Simple chips for manual games */
     .hist-chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .chip { display: flex; align-items: center; gap: 5px; padding: 3px 9px; background: var(--card2); border-radius: 20px; font-size: 12px; }
     .chip-stars { color: var(--gold); font-size: 10px; letter-spacing: -1px; }
     .chip-pos { color: var(--green); font-weight: 700; font-size: 11px; }
     .chip-neg { color: var(--red);   font-weight: 700; font-size: 11px; }
+
+    /* ── BADGE ── */
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+    .badge-win  { background: rgba(76,175,80,.18); color: var(--green); border: 1px solid rgba(76,175,80,.35); }
+    .badge-loss { background: rgba(255,70,85,.18);  color: var(--red);   border: 1px solid rgba(255,70,85,.35); }
 
     /* ── EMPTY STATE ── */
     .empty { text-align: center; padding: 44px 24px; color: var(--dim); }
@@ -159,6 +163,7 @@
     .modal-body { padding: 20px 22px; overflow-y: auto; flex: 1; }
     .modal-foot { padding: 12px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
     .modal-label { font-size: 12px; color: var(--dim); margin-bottom: 14px; }
+    .modal-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 
     /* ── PLAYER CHECKBOX ── */
     .pcheck { display: flex; align-items: center; gap: 12px; padding: 10px 13px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; margin-bottom: 7px; transition: all .15s; user-select: none; }
@@ -187,12 +192,11 @@
     .star.filled { color: var(--gold); }
     .star:hover  { transform: scale(1.15); }
 
-    /* ── CHANGE PASS INPUTS ── */
+    /* ── PASS / RIOT ID INPUTS ── */
     .pass-field { margin-bottom: 12px; }
     .pass-field label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); margin-bottom: 5px; }
     .pass-input { width: 100%; background: var(--card2); border: 1px solid var(--border); border-radius: 4px; padding: 9px 13px; color: var(--text); font-size: 14px; outline: none; transition: border-color .15s; }
     .pass-input:focus { border-color: var(--red); }
-    .modal-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 
     /* ── TOAST ── */
     .toast { position: fixed; bottom: 22px; right: 22px; background: var(--card2); border: 1px solid var(--border); border-left: 3px solid var(--green); padding: 11px 17px; border-radius: 6px; font-size: 13px; font-weight: 500; z-index: 1000; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; }
@@ -202,18 +206,11 @@
     /* ── SPINNER ── */
     @keyframes spin { to { transform: rotate(360deg); } }
     .spin { display: inline-block; animation: spin .7s linear infinite; }
-
-    @media (max-width: 560px) {
-      .lb-row { grid-template-columns: 36px 1fr 90px; }
-      .wl-col { display: none; }
-    }
   </style>
 </head>
 <body>
 
-<!-- ════════════════════════════════════════════
-     LOGIN PAGE
-════════════════════════════════════════════ -->
+<!-- LOGIN PAGE -->
 <div id="P-login">
   <div class="login-card">
     <div class="logo-big">VAL<span>·</span>ELO</div>
@@ -231,9 +228,7 @@
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════
-     APP PAGE
-════════════════════════════════════════════ -->
+<!-- APP PAGE -->
 <div id="P-app" hidden>
 
   <div class="header">
@@ -250,65 +245,73 @@
 
   <div class="main">
 
-    <!-- Rate Now banner (participant, not yet rated) -->
-    <div id="B-rate" class="banner banner-alert" hidden>
+    <!-- Top banners + admin panel -->
+    <div class="top-section">
+
+      <div id="B-rate" class="banner banner-alert" hidden>
+        <div>
+          <div class="banner-text">🎮 New game — rate your teammates!</div>
+          <div class="banner-sub" id="B-rate-sub"></div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openRating()">Rate Now →</button>
+      </div>
+
+      <div id="B-rated" class="banner banner-ok" hidden>
+        <div>
+          <div class="banner-text" style="color:var(--green)">✓ Ratings submitted</div>
+          <div class="banner-sub" id="B-rated-sub">Waiting for others to rate...</div>
+        </div>
+      </div>
+
+      <div id="B-spec" class="banner banner-dim" hidden>
+        <div class="banner-text" style="color:var(--dim)">⏳ A game is in progress — wait for results</div>
+      </div>
+
+      <div id="admin-panel" class="card" hidden>
+        <div class="card-header">
+          <span class="card-label">Pending Game</span>
+          <span id="admin-progress" style="font-size:12px;color:var(--dim)"></span>
+        </div>
+        <div class="admin-game-info" id="admin-game-info"></div>
+        <div class="rater-list" id="admin-rater-list"></div>
+        <div class="admin-actions">
+          <button class="btn btn-sm btn-secondary" onclick="cancelGame()">✕ Cancel Game</button>
+          <button class="btn btn-sm btn-danger"    onclick="forceFinalize()">⚡ Force Finalize</button>
+        </div>
+      </div>
+
+    </div><!-- /top-section -->
+
+    <!-- Two-column layout: leaderboard left, game history right -->
+    <div class="two-col">
+
+      <!-- LEFT: Leaderboard -->
       <div>
-        <div class="banner-text">🎮 New game — rate your teammates!</div>
-        <div class="banner-sub" id="B-rate-sub"></div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header">
+            <span class="card-label">Leaderboard</span>
+            <span id="gameCountLabel" style="font-size:12px;color:var(--dim)"></span>
+          </div>
+          <div id="leaderboard"></div>
+        </div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="openRating()">Rate Now →</button>
-    </div>
 
-    <!-- Rated banner (participant, already rated) -->
-    <div id="B-rated" class="banner banner-ok" hidden>
+      <!-- RIGHT: Game History -->
       <div>
-        <div class="banner-text" style="color:var(--green)">✓ Ratings submitted</div>
-        <div class="banner-sub" id="B-rated-sub">Waiting for others to rate...</div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header">
+            <span class="card-label">Recent Games</span>
+            <span style="font-size:11px;color:var(--dim)">synced games show full stats</span>
+          </div>
+          <div id="history"></div>
+        </div>
       </div>
-    </div>
 
-    <!-- Spectator banner (not in this game) -->
-    <div id="B-spec" class="banner banner-dim" hidden>
-      <div class="banner-text" style="color:var(--dim)">⏳ A game is in progress — wait for results</div>
-    </div>
+    </div><!-- /two-col -->
+  </div><!-- /main -->
+</div><!-- /P-app -->
 
-    <!-- Admin control panel -->
-    <div id="admin-panel" class="card" hidden>
-      <div class="card-header">
-        <span class="card-label">Pending Game</span>
-        <span id="admin-progress" style="font-size:12px;color:var(--dim)"></span>
-      </div>
-      <div class="admin-game-info" id="admin-game-info"></div>
-      <div class="rater-list" id="admin-rater-list"></div>
-      <div class="admin-actions">
-        <button class="btn btn-sm btn-secondary" onclick="cancelGame()">✕ Cancel Game</button>
-        <button class="btn btn-sm btn-danger"    onclick="forceFinalize()">⚡ Force Finalize</button>
-      </div>
-    </div>
-
-    <!-- Leaderboard -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-label">Leaderboard</span>
-        <span id="gameCountLabel" style="font-size:12px;color:var(--dim)"></span>
-      </div>
-      <div id="leaderboard"></div>
-    </div>
-
-    <!-- History -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-label">Game History</span>
-      </div>
-      <div id="history"></div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════
-     MODALS
-════════════════════════════════════════════ -->
+<!-- MODALS -->
 <div id="overlay" hidden onclick="overlayBg(event)">
 
   <!-- Rating modal -->
@@ -380,15 +383,15 @@
       <button class="btn-ghost" onclick="closeModals()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="modal-label">Your Riot ID is used to auto-sync match results from Valorant.</div>
+      <div class="modal-label">Your Riot ID is used to auto-sync match results and stats from Valorant.</div>
       <div class="pass-field">
         <label>Your Riot ID</label>
         <input class="pass-input" type="text" id="ri-self" placeholder="e.g. Aryan#NA1">
       </div>
       <div id="ri-admin-section" hidden>
         <hr class="modal-divider">
-        <div class="modal-label" style="margin-bottom:10px;color:var(--orange)">Admin — set any player's Riot ID</div>
-        <div class="pass-field">
+        <div class="modal-label" style="color:var(--orange)">Admin — set any player's Riot ID</div>
+        <div class="pass-field" style="margin-top:10px">
           <label>Player</label>
           <select class="pass-input" id="ri-player"></select>
         </div>
@@ -413,31 +416,25 @@
 // ─────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────
-
-let ME   = null;   // { id, name, isAdmin, riotId }
-let DATA = null;   // { players, games, pendingGame }
+let ME   = null;
+let DATA = null;
 let TOKEN = localStorage.getItem('val-elo-token');
 let pollTimer = null;
 let prevPendingId = null;
 
-// New game form state
 let ngParticipants = new Set();
 let ngWon = null;
+let ngMatchData = null;   // full match data from Henrik API sync
 
-// Rating form state
-let ratingVals = {}; // playerId → stars (1–5)
+let ratingVals = {};
 
 // ─────────────────────────────────────────────
 // API HELPER
 // ─────────────────────────────────────────────
-
 async function api(method, path, body) {
   const res = await fetch(path, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(TOKEN ? { 'Authorization': `Bearer ${TOKEN}` } : {})
-    },
+    headers: { 'Content-Type': 'application/json', ...(TOKEN ? { 'Authorization': `Bearer ${TOKEN}` } : {}) },
     body: body != null ? JSON.stringify(body) : undefined
   });
   const data = await res.json();
@@ -448,20 +445,16 @@ async function api(method, path, body) {
 // ─────────────────────────────────────────────
 // AUTH
 // ─────────────────────────────────────────────
-
 async function doLogin() {
   const username = document.getElementById('loginName').value;
   const password = document.getElementById('loginPass').value;
   const errEl    = document.getElementById('loginErr');
   const btn      = document.getElementById('loginBtn');
   errEl.textContent = '';
-
   if (!username) { errEl.textContent = 'Please select your name'; return; }
   if (!password) { errEl.textContent = 'Please enter your password'; return; }
-
   btn.disabled = true;
   btn.innerHTML = '<span class="spin">⟳</span> Signing in...';
-
   try {
     const res = await api('POST', '/api/login', { username, password });
     TOKEN = res.token;
@@ -478,50 +471,38 @@ async function doLogin() {
 }
 
 async function doLogout() {
-  TOKEN = null;
-  ME    = null;
-  DATA  = null;
+  TOKEN = null; ME = null; DATA = null;
   localStorage.removeItem('val-elo-token');
   stopPolling();
-  document.getElementById('P-app').hidden  = true;
+  document.getElementById('P-app').hidden   = true;
   document.getElementById('P-login').hidden = false;
   document.getElementById('loginPass').value = '';
 }
 
 // ─────────────────────────────────────────────
-// STATE / POLLING
+// POLLING
 // ─────────────────────────────────────────────
-
 async function fetchState() {
   try {
     const data = await api('GET', '/api/state');
     const newPendingId = data.pendingGame?.id || null;
-
-    if (DATA) { // not first load — show notifications
-      if (prevPendingId && !newPendingId)
-        toast('🏆 Game finalized! ELO updated.');
-      else if (!prevPendingId && newPendingId)
-        toast('🎮 New game posted — rate your teammates!');
+    if (DATA) {
+      if (prevPendingId && !newPendingId)   toast('🏆 Game finalized! ELO updated.');
+      else if (!prevPendingId && newPendingId) toast('🎮 New game posted — rate your teammates!');
     }
-
     prevPendingId = newPendingId;
     DATA = data;
     renderAll();
   } catch (e) {
-    if (e.message.includes('Session expired') || e.message.includes('Not logged in')) {
-      await doLogout();
-    }
+    if (e.message.includes('Session expired') || e.message.includes('Not logged in')) doLogout();
   }
 }
-
 function startPolling() { pollTimer = setInterval(fetchState, 5000); }
 function stopPolling()  { clearInterval(pollTimer); pollTimer = null; }
 
 // ─────────────────────────────────────────────
 // RENDER
 // ─────────────────────────────────────────────
-
-// Safe lookup for JSONB fields (keys may be strings or numbers)
 function gv(obj, id) { return obj?.[id] ?? obj?.[String(id)] ?? obj?.[Number(id)]; }
 
 function renderAll() {
@@ -534,19 +515,12 @@ function renderAll() {
 function renderBanners() {
   const pg = DATA.pendingGame;
   hide('B-rate'); hide('B-rated'); hide('B-spec');
-
   if (!pg) return;
-
   const isParticipant = pg.participants.map(Number).includes(Number(ME.id));
   const hasRated      = !!gv(pg.ratings, ME.id);
-
-  if (!isParticipant) {
-    show('B-spec');
-    return;
-  }
-
+  if (!isParticipant) { show('B-spec'); return; }
   if (!hasRated) {
-    const outcome = pg.won ? '🏆 WIN' : '💀 LOSS';
+    const outcome   = pg.won ? '🏆 WIN' : '💀 LOSS';
     const remaining = pg.pending_raters.length;
     document.getElementById('B-rate-sub').textContent =
       `${outcome} · ${remaining} player${remaining !== 1 ? 's' : ''} still need to rate`;
@@ -563,62 +537,43 @@ function renderAdminPanel() {
   const panel = document.getElementById('admin-panel');
   if (!ME.isAdmin || !DATA.pendingGame) { panel.hidden = true; return; }
   panel.hidden = false;
-
-  const pg    = DATA.pendingGame;
-  const total = pg.participants.length;
-  const done  = total - pg.pending_raters.length;
-
-  document.getElementById('admin-progress').textContent = `${done}/${total} rated`;
-
-  const participantNames = pg.participants.map(id => {
-    const p = DATA.players.find(p => Number(p.id) === Number(id));
-    return p ? p.name : `#${id}`;
-  }).join(', ');
-
+  const pg = DATA.pendingGame;
+  const done = pg.participants.length - pg.pending_raters.length;
+  document.getElementById('admin-progress').textContent = `${done}/${pg.participants.length} rated`;
+  const names = pg.participants.map(id => DATA.players.find(p => Number(p.id) === Number(id))?.name || `#${id}`).join(', ');
   document.getElementById('admin-game-info').innerHTML = `
     <span class="badge ${pg.won ? 'badge-win' : 'badge-loss'}" style="font-size:13px;padding:4px 14px">
       ${pg.won ? '🏆 WIN' : '💀 LOSS'}
     </span>
-    <span style="font-size:13px;color:var(--dim)">${participantNames}</span>
-  `;
-
+    <span style="font-size:13px;color:var(--dim)">${names}</span>`;
   document.getElementById('admin-rater-list').innerHTML = pg.participants.map(id => {
-    const p       = DATA.players.find(p => Number(p.id) === Number(id));
-    const name    = p ? p.name : `#${id}`;
-    const hasDone = !pg.pending_raters.map(Number).includes(Number(id));
-    return `
-      <div class="rater-row ${hasDone ? 'rater-done' : 'rater-pending'}">
-        <span>${hasDone ? '✓' : '⏳'}</span>
-        <span>${esc(name)}</span>
-        <span style="font-size:11px;opacity:.6">${hasDone ? 'submitted' : 'waiting...'}</span>
-      </div>`;
+    const p    = DATA.players.find(p => Number(p.id) === Number(id));
+    const done = !pg.pending_raters.map(Number).includes(Number(id));
+    return `<div class="rater-row ${done ? 'rater-done' : 'rater-pending'}">
+      <span>${done ? '✓' : '⏳'}</span><span>${esc(p ? p.name : `#${id}`)}</span>
+      <span style="font-size:11px;opacity:.6">${done ? 'submitted' : 'waiting...'}</span></div>`;
   }).join('');
 }
 
 function renderLeaderboard() {
   const sorted = [...DATA.players].sort((a, b) => b.elo - a.elo);
-
   document.getElementById('gameCountLabel').textContent =
-    `${DATA.games.length} game${DATA.games.length !== 1 ? 's' : ''} played`;
-
+    `${DATA.games.length} game${DATA.games.length !== 1 ? 's' : ''}`;
   document.getElementById('leaderboard').innerHTML = sorted.map((p, i) => {
     const rank = i + 1;
     const icon = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
     const cls  = rank <= 3 ? `rank-${rank}` : 'rank-other';
-    const barW = Math.max(2, Math.min(100, p.elo)); // elo is 1–100
+    const barW = Math.max(2, Math.min(100, p.elo));
     return `
       <div class="lb-row">
         <div class="rank-num ${cls}">${icon}</div>
-        <div>
+        <div class="lb-info">
           <div class="player-name">${esc(p.name)}</div>
           <div class="elo-bar-wrap"><div class="elo-bar-fill" style="width:${barW}%"></div></div>
         </div>
-        <div class="elo-col">
+        <div class="lb-right">
           <div class="elo-num">${p.elo}</div>
-          <div class="elo-sub">${p.games} game${p.games !== 1 ? 's' : ''}</div>
-        </div>
-        <div class="wl-col">
-          <span class="w">${p.wins}W</span> / <span class="l">${p.losses}L</span>
+          <div class="wl-small"><span class="w">${p.wins}W</span> <span class="l">${p.losses}L</span></div>
         </div>
       </div>`;
   }).join('');
@@ -627,35 +582,74 @@ function renderLeaderboard() {
 function renderHistory() {
   const el = document.getElementById('history');
   if (!DATA.games.length) {
-    el.innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">🎮</div>
-        <div style="font-size:15px;font-weight:600;margin-bottom:6px">No games yet</div>
-        <div style="font-size:13px">${ME.isAdmin ? 'Hit <strong>+ New Game</strong> after your next match' : 'Aryan will post a game after your next match'}</div>
-      </div>`;
+    el.innerHTML = `<div class="empty">
+      <div class="empty-icon">🎮</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px">No games yet</div>
+      <div style="font-size:13px">${ME.isAdmin ? 'Hit <strong>+ New Game</strong> after your next match' : 'Aryan will post a game after your next match'}</div>
+    </div>`;
     return;
   }
+
   el.innerHTML = DATA.games.map(g => {
-    const ps = g.participants.map(id => DATA.players.find(p => Number(p.id) === Number(id))).filter(Boolean);
+    const ps = g.participants
+      .map(id => DATA.players.find(p => Number(p.id) === Number(id)))
+      .filter(Boolean);
+    const md = g.match_data;
+
+    // Sort players by ACS desc (if available)
+    const sorted = md?.playerStats
+      ? [...ps].sort((a, b) => (gv(md.playerStats, b.id)?.acs || 0) - (gv(md.playerStats, a.id)?.acs || 0))
+      : ps;
+
     return `
       <div class="hist-item">
         <div class="hist-top">
-          <span class="hist-date">📅 ${g.game_date || 'Unknown date'}</span>
-          <span class="badge ${g.won ? 'badge-win' : 'badge-loss'}">${g.won ? 'WIN' : 'LOSS'}</span>
+          <div class="hist-meta">
+            <span class="hist-date">📅 ${g.game_date || 'Unknown date'}</span>
+            ${md?.map ? `<span class="hist-map">${esc(md.map)}<span class="hist-mode">${md.mode ? esc(md.mode) : ''}</span></span>` : ''}
+          </div>
+          <div class="hist-right">
+            ${md?.score ? `<span class="hist-score">${esc(md.score)}</span>` : ''}
+            <span class="badge ${g.won ? 'badge-win' : 'badge-loss'}">${g.won ? 'WIN' : 'LOSS'}</span>
+          </div>
         </div>
-        <div class="hist-chips">
-          ${ps.map(p => {
-            const ch  = Math.round(gv(g.elo_changes,  p.id) || 0);
-            const avg = gv(g.avg_ratings, p.id);
-            const stars = avg != null ? '★'.repeat(Math.round(avg)) : '';
-            return `
-              <div class="chip">
+
+        ${md?.playerStats ? `
+          <table class="stat-table">
+            <thead><tr>
+              <th>Player</th><th>Agent</th><th>K / D / A</th><th>ACS</th><th>ELO</th>
+            </tr></thead>
+            <tbody>
+              ${sorted.map(p => {
+                const s  = gv(md.playerStats, p.id);
+                const ch = Math.round(gv(g.elo_changes, p.id) || 0);
+                if (!s) return '';
+                const kd = s.deaths > 0 ? (s.kills / s.deaths).toFixed(2) : s.kills.toFixed(2);
+                const kdClass = parseFloat(kd) >= 1.2 ? 'kd-good' : parseFloat(kd) < 0.85 ? 'kd-bad' : 'kd-even';
+                return `<tr>
+                  <td class="stat-name">${esc(p.name)}</td>
+                  <td class="stat-agent">${esc(s.agent)}</td>
+                  <td class="stat-kda"><span class="${kdClass}">${s.kills}</span> / ${s.deaths} / ${s.assists}</td>
+                  <td class="stat-acs">${s.acs}</td>
+                  <td><span class="${ch >= 0 ? 'chip-pos' : 'chip-neg'}">${ch >= 0 ? '+' : ''}${ch}</span></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        ` : `
+          <div class="hist-chips">
+            ${ps.map(p => {
+              const ch  = Math.round(gv(g.elo_changes, p.id) || 0);
+              const avg = gv(g.avg_ratings, p.id);
+              const stars = avg != null ? '★'.repeat(Math.round(avg)) : '';
+              return `<div class="chip">
                 <span>${esc(p.name)}</span>
                 ${stars ? `<span class="chip-stars">${stars}</span>` : ''}
                 <span class="${ch >= 0 ? 'chip-pos' : 'chip-neg'}">${ch >= 0 ? '+' : ''}${ch}</span>
               </div>`;
-          }).join('')}
-        </div>
+            }).join('')}
+          </div>
+        `}
       </div>`;
   }).join('');
 }
@@ -663,16 +657,13 @@ function renderHistory() {
 // ─────────────────────────────────────────────
 // MODALS
 // ─────────────────────────────────────────────
-
 function showModal(id) {
   document.getElementById('overlay').hidden = false;
   ['rating','newgame','changepass','resetpass','riotid'].forEach(m =>
     document.getElementById(`M-${m}`).hidden = (m !== id)
   );
 }
-function closeModals() {
-  document.getElementById('overlay').hidden = true;
-}
+function closeModals() { document.getElementById('overlay').hidden = true; }
 function overlayBg(e) { if (e.target.id === 'overlay') closeModals(); }
 
 // ── Rating modal
@@ -684,7 +675,6 @@ function openRating() {
     .filter(id => id !== Number(ME.id))
     .map(id => DATA.players.find(p => Number(p.id) === id))
     .filter(Boolean);
-
   document.getElementById('rating-body').innerHTML = `
     <div style="margin-bottom:16px">
       <span class="badge ${pg.won ? 'badge-win' : 'badge-loss'}" style="font-size:13px;padding:4px 14px">
@@ -697,17 +687,12 @@ function openRating() {
         <span class="rate-name">${esc(p.name)}</span>
         <div class="stars" id="st-${p.id}">
           ${[1,2,3,4,5].map(n =>
-            `<span class="star"
-                onclick="setRating(${p.id},${n})"
-                onmouseover="hoverStar(${p.id},${n})"
-                onmouseout="unhoverStar(${p.id})">★</span>`
+            `<span class="star" onclick="setRating(${p.id},${n})" onmouseover="hoverStar(${p.id},${n})" onmouseout="unhoverStar(${p.id})">★</span>`
           ).join('')}
         </div>
-      </div>`).join('')}
-  `;
+      </div>`).join('')}`;
   showModal('rating');
 }
-
 function setRating(pid, n) {
   ratingVals[pid] = n;
   const c = document.getElementById(`st-${pid}`);
@@ -716,19 +701,16 @@ function setRating(pid, n) {
 function hoverStar(pid, n) {
   const c = document.getElementById(`st-${pid}`);
   if (c) c.querySelectorAll('.star').forEach((s, i) => {
-    s.style.color     = i < n ? 'var(--gold)' : '';
-    s.style.transform = i < n ? 'scale(1.15)' : '';
+    s.style.color = i < n ? 'var(--gold)' : ''; s.style.transform = i < n ? 'scale(1.15)' : '';
   });
 }
 function unhoverStar(pid) {
   const c = document.getElementById(`st-${pid}`); if (!c) return;
   const n = ratingVals[pid] || 0;
   c.querySelectorAll('.star').forEach((s, i) => {
-    s.style.color = ''; s.style.transform = '';
-    s.classList.toggle('filled', i < n);
+    s.style.color = ''; s.style.transform = ''; s.classList.toggle('filled', i < n);
   });
 }
-
 async function submitRatings() {
   const pg     = DATA.pendingGame;
   const others = pg.participants.map(Number).filter(id => id !== Number(ME.id));
@@ -740,19 +722,18 @@ async function submitRatings() {
     closeModals();
     toast(res.finalized ? '🏆 All rated — ELO updated!' : '✓ Ratings submitted!');
     await fetchState();
-  } catch (e) {
-    toast(e.message, true);
-  }
+  } catch (e) { toast(e.message, true); }
 }
 
-// ── New game modal (admin)
+// ── New game modal
 function openNewGame() {
   ngParticipants = new Set();
   ngWon = null;
+  ngMatchData = null;
   document.getElementById('newgame-body').innerHTML = `
     <div style="margin-bottom:14px">
       <button id="ng-sync-btn" class="btn btn-secondary btn-full" onclick="syncMatch()">🔄 Auto-fill from Valorant</button>
-      <div style="font-size:11px;color:var(--dim);text-align:center;margin-top:5px">Fetches your group's last match (requires Riot IDs set via 🎯)</div>
+      <div style="font-size:11px;color:var(--dim);text-align:center;margin-top:5px">Fetches your group's last match — also saves K/D/A &amp; map to history</div>
     </div>
     <hr class="modal-divider" style="margin-bottom:14px">
     <div class="modal-label">Or select manually who played this match</div>
@@ -775,19 +756,15 @@ function openNewGame() {
         <button id="ng-loss" class="out-btn loss" onclick="ngSetWon(false)">💀 LOSS</button>
       </div>
     </div>
-    <div style="font-size:12px;color:var(--dim);margin-top:10px" id="ng-count">0 selected</div>
-  `;
+    <div style="font-size:12px;color:var(--dim);margin-top:10px" id="ng-count">0 selected</div>`;
   showModal('newgame');
 }
-
 function ngToggle(id) {
   ngParticipants.has(id) ? ngParticipants.delete(id) : ngParticipants.add(id);
   const wrap = document.getElementById(`ngp-${id}`);
   const box  = document.getElementById(`ngc-${id}`);
-  if (!wrap || !box) return;
-  const sel = ngParticipants.has(id);
-  wrap.classList.toggle('sel', sel);
-  box.textContent = sel ? '✓' : '';
+  if (wrap) wrap.classList.toggle('sel', ngParticipants.has(id));
+  if (box)  box.textContent = ngParticipants.has(id) ? '✓' : '';
   document.getElementById('ng-count').textContent = `${ngParticipants.size} selected (min 2)`;
 }
 function ngSelAll(v) {
@@ -812,8 +789,14 @@ async function syncMatch() {
   btn.innerHTML = '<span class="spin">⟳</span> Syncing...';
   try {
     const result = await api('GET', '/api/match/sync');
-
-    // Clear existing selections
+    ngMatchData = {
+      map:         result.map,
+      mode:        result.mode,
+      score:       result.score,
+      playerStats: result.playerStats,
+      matchId:     result.matchId,
+    };
+    // Clear + re-select participants
     ngParticipants = new Set();
     DATA.players.forEach(p => {
       const wrap = document.getElementById(`ngp-${p.id}`);
@@ -821,8 +804,6 @@ async function syncMatch() {
       if (wrap) wrap.classList.remove('sel');
       if (box)  box.textContent = '';
     });
-
-    // Apply synced participants
     for (const p of result.participants) {
       ngParticipants.add(p.id);
       const wrap = document.getElementById(`ngp-${p.id}`);
@@ -830,14 +811,10 @@ async function syncMatch() {
       if (wrap) wrap.classList.add('sel');
       if (box)  box.textContent = '✓';
     }
-
-    // Apply outcome
     ngSetWon(result.won);
-
-    const mapInfo = result.map !== 'Unknown' ? ` · ${result.map}` : '';
-    document.getElementById('ng-count').textContent =
-      `${ngParticipants.size} players synced${mapInfo}`;
-    toast(`✓ Synced! ${result.participants.length} players found.`);
+    const label = result.map !== 'Unknown' ? ` · ${result.map} ${result.score}` : '';
+    document.getElementById('ng-count').textContent = `${ngParticipants.size} players synced${label}`;
+    toast(`✓ Synced! ${result.participants.length} players · ${result.map}`);
   } catch (e) {
     toast(e.message, true);
   } finally {
@@ -852,28 +829,26 @@ async function submitNewGame() {
   try {
     await api('POST', '/api/game/create', {
       participants: [...ngParticipants].map(Number),
-      won: ngWon
+      won: ngWon,
+      matchData: ngMatchData || null,
     });
     closeModals();
     toast('Game posted! Players can now rate.');
     await fetchState();
-  } catch (e) {
-    toast(e.message, true);
-  }
+  } catch (e) { toast(e.message, true); }
 }
 
 // ── Admin actions
 async function forceFinalize() {
-  if (!confirm('Force finalize? Players who haven\'t rated will be skipped (neutral score given).')) return;
+  if (!confirm('Force finalize? Players who haven\'t rated get a neutral score.')) return;
   try {
     await api('POST', '/api/game/finalize', {});
     toast('🏆 Game finalized — ELO updated!');
     await fetchState();
   } catch (e) { toast(e.message, true); }
 }
-
 async function cancelGame() {
-  if (!confirm('Cancel this game? All submitted ratings will be lost and ELO won\'t change.')) return;
+  if (!confirm('Cancel this game? Ratings lost, ELO unchanged.')) return;
   try {
     await api('POST', '/api/game/cancel', {});
     toast('Game cancelled.');
@@ -886,29 +861,26 @@ function openChangePass() {
   ['cp-cur','cp-new','cp-con'].forEach(id => document.getElementById(id).value = '');
   showModal('changepass');
 }
-
 async function submitChangePass() {
   const cur = document.getElementById('cp-cur').value;
   const nw  = document.getElementById('cp-new').value;
   const con = document.getElementById('cp-con').value;
-  if (!cur)        { toast('Enter your current password', true); return; }
+  if (!cur)          { toast('Enter your current password', true); return; }
   if (nw.length < 3) { toast('New password must be at least 3 characters', true); return; }
-  if (nw !== con)  { toast('Passwords don\'t match', true); return; }
+  if (nw !== con)    { toast('Passwords don\'t match', true); return; }
   try {
     await api('POST', '/api/password/change', { currentPassword: cur, newPassword: nw });
-    closeModals();
-    toast('Password updated!');
+    closeModals(); toast('Password updated!');
   } catch (e) { toast(e.message, true); }
 }
 
 // ── Admin reset password
 function openResetPass() {
-  const sel = document.getElementById('rp-player');
-  sel.innerHTML = DATA.players.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  document.getElementById('rp-player').innerHTML =
+    DATA.players.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
   document.getElementById('rp-new').value = '';
   showModal('resetpass');
 }
-
 async function submitResetPass() {
   const playerId = document.getElementById('rp-player').value;
   const nw       = document.getElementById('rp-new').value;
@@ -927,8 +899,7 @@ function openRiotId() {
   const adminSection = document.getElementById('ri-admin-section');
   if (ME.isAdmin) {
     adminSection.hidden = false;
-    const sel = document.getElementById('ri-player');
-    sel.innerHTML = DATA.players.map(p =>
+    document.getElementById('ri-player').innerHTML = DATA.players.map(p =>
       `<option value="${p.id}">${esc(p.name)}${p.riot_id ? ' (' + esc(p.riot_id) + ')' : ''}</option>`
     ).join('');
     document.getElementById('ri-other').value = '';
@@ -937,30 +908,24 @@ function openRiotId() {
   }
   showModal('riotid');
 }
-
 async function submitRiotId() {
   const riotId = document.getElementById('ri-self').value.trim();
-  if (!riotId) { closeModals(); return; } // allow clearing
-  if (!riotId.includes('#')) { toast('Format must be Name#Tag (e.g. Aryan#NA1)', true); return; }
+  if (riotId && !riotId.includes('#')) { toast('Format: Name#Tag (e.g. Aryan#NA1)', true); return; }
   try {
-    await api('POST', '/api/player/riot-id', { riotId });
+    if (riotId) await api('POST', '/api/player/riot-id', { riotId });
     ME.riotId = riotId;
-    closeModals();
-    toast('Riot ID saved!');
+    closeModals(); toast(riotId ? 'Riot ID saved!' : 'Riot ID cleared.');
   } catch (e) { toast(e.message, true); }
 }
-
 async function submitAdminRiotId() {
   const playerId = document.getElementById('ri-player').value;
   const riotId   = document.getElementById('ri-other').value.trim();
-  if (!riotId.includes('#')) { toast('Format must be Name#Tag (e.g. Mateo#NA1)', true); return; }
+  if (!riotId.includes('#')) { toast('Format: Name#Tag (e.g. Mateo#NA1)', true); return; }
   try {
     await api('POST', '/api/player/riot-id/admin', { playerId: Number(playerId), riotId });
     const p = DATA.players.find(p => Number(p.id) === Number(playerId));
     if (p) p.riot_id = riotId;
-    // Refresh dropdown to show updated IDs
-    const sel = document.getElementById('ri-player');
-    sel.innerHTML = DATA.players.map(p =>
+    document.getElementById('ri-player').innerHTML = DATA.players.map(p =>
       `<option value="${p.id}">${esc(p.name)}${p.riot_id ? ' (' + esc(p.riot_id) + ')' : ''}</option>`
     ).join('');
     document.getElementById('ri-other').value = '';
@@ -969,9 +934,8 @@ async function submitAdminRiotId() {
 }
 
 // ─────────────────────────────────────────────
-// SHOW APP / SETUP
+// SHOW APP
 // ─────────────────────────────────────────────
-
 function showApp() {
   document.getElementById('P-login').hidden = true;
   document.getElementById('P-app').hidden   = false;
@@ -984,7 +948,6 @@ function showApp() {
 // ─────────────────────────────────────────────
 // UTILS
 // ─────────────────────────────────────────────
-
 function show(id) { document.getElementById(id).hidden = false; }
 function hide(id) { document.getElementById(id).hidden = true; }
 
@@ -995,9 +958,8 @@ function toast(msg, err = false) {
   el.className   = `toast${err ? ' err' : ''}`;
   clearTimeout(_toastTimer);
   requestAnimationFrame(() => el.classList.add('show'));
-  _toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
 }
-
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -1005,9 +967,7 @@ function esc(s) {
 // ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
-
 async function init() {
-  // Populate login dropdown
   try {
     const players = await fetch('/api/players-list').then(r => r.json());
     const sel = document.getElementById('loginName');
@@ -1015,7 +975,6 @@ async function init() {
       players.map(p => `<option value="${p.name.toLowerCase()}">${esc(p.name)}</option>`).join('');
   } catch(e) { /* leave as-is */ }
 
-  // Auto-login if token exists
   if (TOKEN) {
     try {
       ME = await api('GET', '/api/me');
@@ -1027,7 +986,6 @@ async function init() {
       TOKEN = null;
     }
   }
-
   document.getElementById('P-login').hidden = false;
 }
 

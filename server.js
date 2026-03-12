@@ -146,6 +146,7 @@ async function initDB() {
 
   // Migrations for existing installs
   await pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS riot_id TEXT`);
+  await pool.query(`ALTER TABLE games   ADD COLUMN IF NOT EXISTS match_data JSONB`);
   await pool.query(`UPDATE players SET elo = 50 WHERE elo = 1000 AND games = 0`);
 
   const { rows } = await pool.query('SELECT COUNT(*) AS c FROM players');
@@ -224,7 +225,7 @@ app.get('/api/state', auth, async (req, res) => {
 // Admin: create a new game
 app.post('/api/game/create', auth, adminOnly, async (req, res) => {
   try {
-    const { participants, won } = req.body;
+    const { participants, won, matchData } = req.body;
     if (!Array.isArray(participants) || participants.length < 2)
       return res.status(400).json({ error: 'Need at least 2 participants' });
     if (typeof won !== 'boolean')
@@ -239,9 +240,9 @@ app.post('/api/game/create', auth, adminOnly, async (req, res) => {
     const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
     await pool.query(
-      `INSERT INTO games (id, won, status, participants, ratings, pending_raters, game_date)
-       VALUES ($1, $2, 'pending', $3, '{}', $4, $5)`,
-      [id, won, pIds, pIds, date]
+      `INSERT INTO games (id, won, status, participants, ratings, pending_raters, game_date, match_data)
+       VALUES ($1, $2, 'pending', $3, '{}', $4, $5, $6)`,
+      [id, won, pIds, pIds, date, matchData || null]
     );
     res.json({ ok: true });
   } catch (e) {
@@ -402,14 +403,42 @@ app.get('/api/match/sync', auth, adminOnly, async (req, res) => {
       mp.name?.toLowerCase() === p1Name?.toLowerCase() &&
       mp.tag?.toLowerCase()  === p1Tag?.toLowerCase()
     );
-    const ourTeam = p1Data?.team?.toLowerCase(); // 'red' or 'blue'
-    const won = match.teams?.[ourTeam]?.has_won === true;
+    const ourTeam  = p1Data?.team?.toLowerCase(); // 'red' or 'blue'
+    const oppTeam  = ourTeam === 'red' ? 'blue' : 'red';
+    const won      = match.teams?.[ourTeam]?.has_won === true;
+    const roundsPlayed = match.metadata?.rounds_played || 1;
+
+    // Build per-player stats for our group members
+    const playerStats = {};
+    for (const p of participants) {
+      const [pName, pTag] = p.riot_id.split('#');
+      const mp = matchPlayers.find(m =>
+        m.name?.toLowerCase() === pName?.toLowerCase() &&
+        m.tag?.toLowerCase()  === pTag?.toLowerCase()
+      );
+      if (mp) {
+        playerStats[String(p.id)] = {
+          agent:   mp.character   || 'Unknown',
+          kills:   mp.stats?.kills   ?? 0,
+          deaths:  mp.stats?.deaths  ?? 0,
+          assists: mp.stats?.assists ?? 0,
+          acs:     Math.round((mp.stats?.score ?? 0) / roundsPlayed),
+        };
+      }
+    }
+
+    const ourRounds = match.teams?.[ourTeam]?.rounds_won   ?? '?';
+    const oppRounds = match.teams?.[oppTeam]?.rounds_won   ?? '?';
+    const score     = `${ourRounds} - ${oppRounds}`;
 
     res.json({
       participants: participants.map(p => ({ id: p.id, name: p.name })),
       won,
-      map:  match.metadata?.map  || 'Unknown',
-      mode: match.metadata?.mode || '',
+      map:         match.metadata?.map  || 'Unknown',
+      mode:        match.metadata?.mode || '',
+      score,
+      playerStats,
+      matchId:     match.metadata?.matchid || null,
     });
   } catch (e) {
     console.error('Sync error:', e);
