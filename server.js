@@ -341,7 +341,7 @@ app.post('/api/player/riot-id', auth, async (req, res) => {
   const { riotId } = req.body;
   if (!riotId || !riotId.includes('#'))
     return res.status(400).json({ error: 'Riot ID must be in format Name#Tag (e.g. Aryan#NA1)' });
-  await pool.query('UPDATE players SET riot_id = $1 WHERE id = $2', [riotId.trim(), req.user.id]);
+  await pool.query('UPDATE players SET riot_id = $1 WHERE id = $2', [riotId.trim().replace(/\s*#\s*/, '#'), req.user.id]);
   res.json({ ok: true });
 });
 
@@ -350,7 +350,7 @@ app.post('/api/player/riot-id/admin', auth, adminOnly, async (req, res) => {
   const { playerId, riotId } = req.body;
   if (!riotId || !riotId.includes('#'))
     return res.status(400).json({ error: 'Riot ID must be in format Name#Tag (e.g. Aryan#NA1)' });
-  const r = await pool.query('UPDATE players SET riot_id = $1 WHERE id = $2', [riotId.trim(), Number(playerId)]);
+  const r = await pool.query('UPDATE players SET riot_id = $1 WHERE id = $2', [riotId.trim().replace(/\s*#\s*/, '#'), Number(playerId)]);
   if (r.rowCount === 0) return res.status(404).json({ error: 'Player not found' });
   res.json({ ok: true });
 });
@@ -365,7 +365,7 @@ app.get('/api/match/sync', auth, adminOnly, async (req, res) => {
       return res.status(400).json({ error: 'No Riot IDs set yet. Add at least one Riot ID first (🎯 button).' });
 
     const region = process.env.VALORANT_REGION || 'na';
-    const [name, tag] = playersWithId[0].riot_id.split('#');
+    const [name, tag] = playersWithId[0].riot_id.split('#').map(s => s.trim());
 
     const headers = { 'User-Agent': 'val-elo/1.0' };
     if (process.env.HENRIK_API_KEY) headers['Authorization'] = process.env.HENRIK_API_KEY;
@@ -387,7 +387,7 @@ app.get('/api/match/sync', auth, adminOnly, async (req, res) => {
     // Find which registered players were in this match
     const participants = allPlayers.filter(p => {
       if (!p.riot_id) return false;
-      const [pName, pTag] = p.riot_id.split('#');
+      const [pName, pTag] = p.riot_id.split('#').map(s => s.trim());
       return matchPlayers.some(mp =>
         mp.name?.toLowerCase() === pName?.toLowerCase() &&
         mp.tag?.toLowerCase()  === pTag?.toLowerCase()
@@ -398,7 +398,7 @@ app.get('/api/match/sync', auth, adminOnly, async (req, res) => {
       return res.status(400).json({ error: `Only ${participants.length} registered player(s) found in that match. Set more Riot IDs first.` });
 
     // Determine win/loss for our team
-    const [p1Name, p1Tag] = participants[0].riot_id.split('#');
+    const [p1Name, p1Tag] = participants[0].riot_id.split('#').map(s => s.trim());
     const p1Data = matchPlayers.find(mp =>
       mp.name?.toLowerCase() === p1Name?.toLowerCase() &&
       mp.tag?.toLowerCase()  === p1Tag?.toLowerCase()
@@ -411,7 +411,7 @@ app.get('/api/match/sync', auth, adminOnly, async (req, res) => {
     // Build per-player stats for our group members
     const playerStats = {};
     for (const p of participants) {
-      const [pName, pTag] = p.riot_id.split('#');
+      const [pName, pTag] = p.riot_id.split('#').map(s => s.trim());
       const mp = matchPlayers.find(m =>
         m.name?.toLowerCase() === pName?.toLowerCase() &&
         m.tag?.toLowerCase()  === pTag?.toLowerCase()
