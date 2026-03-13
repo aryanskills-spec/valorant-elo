@@ -684,7 +684,7 @@ function renderHistory() {
         ${md?.playerStats ? `
           <table class="stat-table">
             <thead><tr>
-              <th>Player</th><th>Agent</th><th>K / D / A</th><th>ACS</th>
+              <th>Player</th><th>Agent</th><th>K / D / A</th><th>ACS</th><th>HS%</th><th>Last Alive</th>
               ${isSynced ? '' : '<th>ELO</th><th>Bait</th>'}
             </tr></thead>
             <tbody>
@@ -700,6 +700,8 @@ function renderHistory() {
                   <td class="stat-agent">${esc(s.agent)}</td>
                   <td class="stat-kda"><span class="${kdClass}">${s.kills}</span> / ${s.deaths} / ${s.assists}</td>
                   <td class="stat-acs">${s.acs}</td>
+                  <td style="color:var(--dim)">${s.hs != null ? s.hs + '%' : '—'}</td>
+                  <td style="color:var(--text)">${s.lastAlive?.count ? `${s.lastAlive.count}x 1v${s.lastAlive.maxVs}` : '—'}</td>
                   ${isSynced ? '' : `
                     <td><span class="${ch >= 0 ? 'chip-pos' : 'chip-neg'}">${ch >= 0 ? '+' : ''}${ch}</span></td>
                     <td style="color:var(--orange)">${bait != null ? `🔥${Math.round(bait)}` : '—'}</td>

@@ -158,6 +158,79 @@ async function finalizeGame(gameId) {
 }
 
 // ─────────────────────────────────────────────
+// LAST ALIVE DERIVER
+// Given all match players + top-level kills array (v4), returns
+// { [puuid]: { count: N, maxVs: M } } — how many times each player
+// was the last one alive on their team, and the biggest clutch they faced.
+// ─────────────────────────────────────────────
+
+function computeLastAlive(matchPlayers, kills) {
+  // Group all 10 players by team
+  const teamPlayers = {};
+  for (const p of matchPlayers) {
+    const team = (p.team_id || p.team || '').toLowerCase();
+    if (!team) continue;
+    if (!teamPlayers[team]) teamPlayers[team] = new Set();
+    if (p.puuid) teamPlayers[team].add(p.puuid);
+  }
+  const teams = Object.keys(teamPlayers);
+  if (teams.length < 2) return {};
+
+  // Group kills by round number
+  const killsByRound = {};
+  for (const kill of (kills || [])) {
+    const r = kill.round ?? 0;
+    if (!killsByRound[r]) killsByRound[r] = [];
+    killsByRound[r].push(kill);
+  }
+
+  const stats = {}; // puuid → { count, maxVs }
+
+  for (const roundKills of Object.values(killsByRound)) {
+    // Process kills in chronological order
+    const sorted = [...roundKills].sort(
+      (a, b) => (a.time_in_round_in_ms ?? 0) - (b.time_in_round_in_ms ?? 0)
+    );
+
+    // Clone alive sets for this round
+    const alive = {};
+    for (const [team, players] of Object.entries(teamPlayers)) {
+      alive[team] = new Set(players);
+    }
+
+    // Track who we've already flagged as last-alive this round (avoid double-counting)
+    const markedLastAlive = new Set();
+
+    for (const kill of sorted) {
+      const victimPuuid = kill.victim?.puuid;
+      const victimTeam  = (kill.victim?.team || '').toLowerCase();
+
+      if (victimPuuid && alive[victimTeam]) {
+        alive[victimTeam].delete(victimPuuid);
+      }
+
+      // After each kill, check if any team is down to 1
+      for (const [team, aliveSet] of Object.entries(alive)) {
+        if (aliveSet.size !== 1) continue;
+        const lastPuuid = [...aliveSet][0];
+        if (markedLastAlive.has(lastPuuid)) continue;
+
+        markedLastAlive.add(lastPuuid);
+        const enemyTeam  = teams.find(t => t !== team);
+        const enemyCount = alive[enemyTeam]?.size ?? 0;
+        if (enemyCount > 0) {
+          if (!stats[lastPuuid]) stats[lastPuuid] = { count: 0, maxVs: 0 };
+          stats[lastPuuid].count++;
+          stats[lastPuuid].maxVs = Math.max(stats[lastPuuid].maxVs, enemyCount);
+        }
+      }
+    }
+  }
+
+  return stats;
+}
+
+// ─────────────────────────────────────────────
 // DATABASE INIT + SEED
 // ─────────────────────────────────────────────
 
@@ -467,15 +540,18 @@ app.get('/api/match/sync', auth, async (req, res) => {
     const matchMap = new Map();
     for (const player of playersWithId) {
       const [name, tag] = player.riot_id.split('#').map(s => s.trim());
-      const url = `https://api.henrikdev.xyz/valorant/v3/matches/${region}/${encodeURIComponent(name)}/${encodeURIComponent(tag)}?size=15`;
+      const url = `https://api.henrikdev.xyz/valorant/v4/matches/${region}/pc/${encodeURIComponent(name)}/${encodeURIComponent(tag)}?size=15`;
       try {
         const apiRes = await fetch(url, { headers });
         if (!apiRes.ok) continue;
         const data = await apiRes.json();
         for (const match of (data.data || [])) {
-          const matchId = match.metadata?.matchid;
+          const matchId = match.metadata?.match_id;
           if (!matchId) continue;
-          if ((match.metadata?.game_start || 0) < cutoffTs) continue;
+          const matchStartSec = match.metadata?.started_at
+            ? Math.floor(new Date(match.metadata.started_at).getTime() / 1000)
+            : 0;
+          if (matchStartSec < cutoffTs) continue;
           if (!matchMap.has(matchId)) matchMap.set(matchId, match);
         }
       } catch (e) {
@@ -496,8 +572,9 @@ app.get('/api/match/sync', auth, async (req, res) => {
     for (const [matchId, match] of matchMap) {
       if (existingIds.has(matchId)) continue;
 
-      const matchPlayers = match.players?.all_players || [];
-      const roundsPlayed = match.metadata?.rounds_played || 1;
+      const matchPlayers = match.players || [];
+      const roundsPlayed = match.metadata?.rounds_played ||
+        ((match.teams?.red?.rounds_won ?? 0) + (match.teams?.blue?.rounds_won ?? 0)) || 1;
 
       // Find which registered players are in this match
       const participants = allPlayers.filter(p => {
@@ -517,7 +594,7 @@ app.get('/api/match/sync', auth, async (req, res) => {
         mp.name?.toLowerCase() === p1Name?.toLowerCase() &&
         mp.tag?.toLowerCase()  === p1Tag?.toLowerCase()
       );
-      const ourTeam  = p1Data?.team?.toLowerCase();
+      const ourTeam  = (p1Data?.team_id || p1Data?.team)?.toLowerCase();
       const oppTeam  = ourTeam === 'red' ? 'blue' : 'red';
       const won      = match.teams?.[ourTeam]?.has_won === true;
       const ourRounds = match.teams?.[ourTeam]?.rounds_won ?? '?';
@@ -532,25 +609,42 @@ app.get('/api/match/sync', auth, async (req, res) => {
           m.tag?.toLowerCase()  === pTag?.toLowerCase()
         );
         if (mp) {
+          const totalShots = (mp.stats?.headshots ?? 0) + (mp.stats?.bodyshots ?? 0) + (mp.stats?.legshots ?? 0);
           playerStats[String(p.id)] = {
-            agent:   mp.character      || 'Unknown',
+            agent:   mp.agent?.name || mp.character || 'Unknown',
             kills:   mp.stats?.kills   ?? 0,
             deaths:  mp.stats?.deaths  ?? 0,
             assists: mp.stats?.assists ?? 0,
             acs:     Math.round((mp.stats?.score ?? 0) / roundsPlayed),
+            hs:      totalShots > 0 ? Math.round((mp.stats?.headshots ?? 0) / totalShots * 100) : 0,
           };
         }
       }
 
-      const gameStart = match.metadata?.game_start || Math.floor(Date.now() / 1000);
+      // Derive last-alive clutch stats from kill feed (v4 only)
+      const lastAliveByPuuid = computeLastAlive(matchPlayers, match.kills || []);
+      for (const p of participants) {
+        const [laName, laTag] = p.riot_id.split('#').map(s => s.trim());
+        const mp2 = matchPlayers.find(m =>
+          m.name?.toLowerCase() === laName?.toLowerCase() &&
+          m.tag?.toLowerCase()  === laTag?.toLowerCase()
+        );
+        if (mp2?.puuid && playerStats[String(p.id)] && lastAliveByPuuid[mp2.puuid]) {
+          playerStats[String(p.id)].lastAlive = lastAliveByPuuid[mp2.puuid];
+        }
+      }
+
+      const gameStart = match.metadata?.started_at
+        ? Math.floor(new Date(match.metadata.started_at).getTime() / 1000)
+        : (match.metadata?.game_start || Math.floor(Date.now() / 1000));
       // Format date in Eastern time so it matches when the game was actually played
       const gameDate  = new Date(gameStart * 1000).toLocaleDateString('en-US', {
         timeZone: 'America/New_York',
         month: 'short', day: 'numeric', year: 'numeric'
       });
       const matchData = {
-        map:         match.metadata?.map  || 'Unknown',
-        mode:        match.metadata?.mode || '',
+        map:         match.metadata?.map?.name  || match.metadata?.map  || 'Unknown',
+        mode:        match.metadata?.queue?.name || match.metadata?.mode || '',
         score:       `${ourRounds} - ${oppRounds}`,
         playerStats,
         gameStartTs: gameStart, // store raw ts so client can format in local tz
