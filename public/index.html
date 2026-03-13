@@ -620,7 +620,15 @@ function renderLeaderboard() {
 
 function renderHistory() {
   const el = document.getElementById('history');
-  const allGames = [...DATA.syncedGames, ...DATA.games];
+  // Merge and sort by game start time descending (most recent first)
+  // Synced game IDs = gameStart*1000 ms; completed game IDs = Date.now() at creation
+  // For completed games also try match_data.gameStartTs for accurate ordering
+  const allGames = [...DATA.syncedGames, ...DATA.games]
+    .sort((a, b) => {
+      const tsA = a.match_data?.gameStartTs ? a.match_data.gameStartTs * 1000 : Number(a.id);
+      const tsB = b.match_data?.gameStartTs ? b.match_data.gameStartTs * 1000 : Number(b.id);
+      return tsB - tsA;
+    });
 
   if (!allGames.length) {
     el.innerHTML = `<div class="empty">
@@ -637,6 +645,10 @@ function renderHistory() {
       .map(id => DATA.players.find(p => Number(p.id) === Number(id)))
       .filter(Boolean);
     const md = g.match_data;
+    // Format date client-side using stored timestamp so timezone is correct
+    const displayDate = md?.gameStartTs
+      ? new Date(md.gameStartTs * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : (g.game_date || 'Unknown date');
 
     const sorted = md?.playerStats
       ? [...ps].sort((a, b) => (gv(md.playerStats, b.id)?.acs || 0) - (gv(md.playerStats, a.id)?.acs || 0))
@@ -650,8 +662,11 @@ function renderHistory() {
       <div class="hist-item">
         <div class="hist-top">
           <div class="hist-meta">
-            <span class="hist-date">📅 ${g.game_date || 'Unknown date'}</span>
-            ${md?.map ? `<span class="hist-map">${esc(md.map)}<span class="hist-mode">${md.mode ? esc(md.mode) : ''}</span></span>` : ''}
+            <span class="hist-date">📅 ${displayDate}</span>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px">
+              ${md?.map ? `<span class="hist-map">${esc(md.map)}${md.mode ? `<span class="hist-mode">${esc(md.mode)}</span>` : ''}</span>` : ''}
+              <span style="font-size:12px;color:var(--dim)">${ps.map(p => esc(p.name)).join(', ')}</span>
+            </div>
           </div>
           <div class="hist-right">
             ${md?.score ? `<span class="hist-score">${esc(md.score)}</span>` : ''}

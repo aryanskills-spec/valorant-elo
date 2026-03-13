@@ -451,11 +451,16 @@ app.get('/api/match/sync', auth, async (req, res) => {
     const headers = { 'User-Agent': 'val-elo/1.0' };
     if (process.env.HENRIK_API_KEY) headers['Authorization'] = process.env.HENRIK_API_KEY;
 
-    // Yesterday midnight (local server time) as Unix seconds cutoff
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0);
-    const cutoffTs = Math.floor(yesterday.getTime() / 1000);
+    // Cutoff: today at 8 AM Eastern time
+    // Using a fixed UTC offset for Eastern (-5h standard / -4h daylight).
+    // We pick whichever "8 AM Eastern today" is still in the past.
+    const nowMs    = Date.now();
+    const etOffset = -5 * 3600 * 1000; // EST (close enough; DST is max 1h off)
+    const nowET    = new Date(nowMs + etOffset);
+    const cutoffET = new Date(nowET);
+    cutoffET.setUTCHours(8, 0, 0, 0); // 8 AM in ET expressed as UTC
+    if (cutoffET > nowET) cutoffET.setUTCDate(cutoffET.getUTCDate() - 1); // haven't hit 8am yet
+    const cutoffTs = Math.floor((cutoffET.getTime() - etOffset) / 1000);
 
     // Fetch last 15 matches for each player with a Riot ID; deduplicate by matchId
     const matchMap = new Map();
@@ -537,7 +542,9 @@ app.get('/api/match/sync', auth, async (req, res) => {
       }
 
       const gameStart = match.metadata?.game_start || Math.floor(Date.now() / 1000);
+      // Format date in Eastern time so it matches when the game was actually played
       const gameDate  = new Date(gameStart * 1000).toLocaleDateString('en-US', {
+        timeZone: 'America/New_York',
         month: 'short', day: 'numeric', year: 'numeric'
       });
       const matchData = {
@@ -545,6 +552,7 @@ app.get('/api/match/sync', auth, async (req, res) => {
         mode:        match.metadata?.mode || '',
         score:       `${ourRounds} - ${oppRounds}`,
         playerStats,
+        gameStartTs: gameStart, // store raw ts so client can format in local tz
       };
 
       const pIds   = participants.map(p => p.id);
