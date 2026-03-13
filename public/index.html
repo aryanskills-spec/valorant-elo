@@ -267,16 +267,6 @@
 
     </div>
 
-    <!-- ELO Timeline Graph -->
-    <div class="card" id="elo-graph-card" style="margin-bottom:22px">
-      <div class="card-header">
-        <span class="card-label">ELO Timeline</span>
-      </div>
-      <div style="padding:16px 20px">
-        <canvas id="elo-chart" style="max-height:260px"></canvas>
-      </div>
-    </div>
-
     <div class="two-col">
 
       <!-- LEFT: Leaderboard -->
@@ -301,6 +291,17 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- ELO Timeline Graph -->
+    <div class="card" id="elo-graph-card" style="margin-top:22px">
+      <div class="card-header">
+        <span class="card-label">ELO Timeline</span>
+        <span style="font-size:11px;color:var(--dim)">ELO over completed games</span>
+      </div>
+      <div style="padding:20px 24px">
+        <canvas id="elo-chart" style="max-height:320px"></canvas>
+      </div>
     </div>
   </div>
 </div>
@@ -549,31 +550,85 @@ async function renderEloGraph() {
   eloChartGameCount = gameCount;
   try {
     const d = await api('GET', '/api/elo-history');
+
+    // Dynamic Y-axis: zoom into actual data range with padding
+    const allVals = d.players.flatMap(p => (d.series[p.id] || []).filter(v => v != null));
+    const dataMin = allVals.length ? Math.min(...allVals) : 1;
+    const dataMax = allVals.length ? Math.max(...allVals) : 100;
+    const yMin = Math.max(1,   Math.floor(dataMin - 6));
+    const yMax = Math.min(100, Math.ceil(dataMax  + 6));
+
+    const many = d.labels.length > 20;
     const datasets = d.players.map((p, i) => ({
-      label:           p.name,
-      data:            d.series[p.id],
-      borderColor:     GRAPH_COLORS[i % GRAPH_COLORS.length],
-      backgroundColor: 'transparent',
-      tension:         0.35,
-      pointRadius:     d.labels.length > 20 ? 2 : 4,
-      borderWidth:     2,
+      label:              p.name,
+      data:               d.series[p.id],
+      borderColor:        GRAPH_COLORS[i % GRAPH_COLORS.length],
+      backgroundColor:    'transparent',
+      tension:            0.4,
+      pointRadius:        many ? 2 : 5,
+      pointHoverRadius:   many ? 5 : 7,
+      pointBackgroundColor: GRAPH_COLORS[i % GRAPH_COLORS.length],
+      borderWidth:        2.5,
+      spanGaps:           true,
     }));
+
+    // Subtle reference line at starting ELO (50)
+    const refLine = {
+      label:       'Start (50)',
+      data:        d.labels.map(() => 50),
+      borderColor: 'rgba(255,255,255,0.12)',
+      borderWidth: 1,
+      borderDash:  [5, 5],
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      tension:     0,
+      spanGaps:    true,
+    };
+
     const ctx = document.getElementById('elo-chart').getContext('2d');
     if (eloChart) eloChart.destroy();
     eloChart = new Chart(ctx, {
       type: 'line',
-      data: { labels: d.labels, datasets },
+      data: { labels: d.labels, datasets: [...datasets, refLine] },
       options: {
         responsive: true,
         maintainAspectRatio: true,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { labels: { color: '#ece8e1', font: { size: 11 }, boxWidth: 12 } },
-          tooltip: { backgroundColor: '#1a2332', borderColor: '#2a3a4a', borderWidth: 1 }
+          legend: {
+            labels: {
+              color: '#ece8e1', font: { size: 11 }, boxWidth: 14, padding: 16,
+              filter: item => item.text !== 'Start (50)'
+            }
+          },
+          tooltip: {
+            backgroundColor: '#1a2332',
+            borderColor: '#2a3a4a',
+            borderWidth: 1,
+            padding: 10,
+            titleColor: '#ece8e1',
+            bodyColor: '#ece8e1',
+            callbacks: {
+              label: ctx => ctx.dataset.label === 'Start (50)'
+                ? null
+                : ` ${ctx.dataset.label}: ${ctx.parsed.y}`
+            }
+          }
         },
         scales: {
-          x: { ticks: { color: '#7a8fa6', font: { size: 10 }, maxRotation: 45 }, grid: { color: 'rgba(255,255,255,0.04)' } },
-          y: { min: 1, max: 100, ticks: { color: '#7a8fa6', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } }
+          x: {
+            ticks: { color: '#7a8fa6', font: { size: 10 }, maxRotation: 40, maxTicksLimit: 12 },
+            grid: { color: 'rgba(255,255,255,0.04)' }
+          },
+          y: {
+            min: yMin,
+            max: yMax,
+            ticks: {
+              color: '#7a8fa6', font: { size: 10 }, stepSize: 2,
+              callback: v => Number.isInteger(v) ? v : ''
+            },
+            grid: { color: 'rgba(255,255,255,0.05)' }
+          }
         }
       }
     });
