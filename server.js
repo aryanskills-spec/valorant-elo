@@ -80,8 +80,9 @@ function calcElo(ids, won, avgRatings, gamesCounts, playerStats) {
     const perfComp   = N > 1
       ? ((N - 1 - perfRank[id]) / (N - 1) * 2 - 1) * 2
       : 0;
-    const rating     = avgRatings[id] ?? 3;
-    const ratingComp = (rating - 3) / 2 * 5;
+    // Performance slider is 1-100; 50 = neutral → ±5 ELO component
+    const rating     = avgRatings[id] ?? 50;
+    const ratingComp = (rating - 50) / 50 * 5;
 
     out[id] = Math.round((winComp + perfComp + ratingComp) * kMult);
   }
@@ -112,7 +113,7 @@ async function finalizeGame(gameId) {
     }
     avgRatings[pid] = received.length > 0
       ? received.reduce((a, b) => a + b, 0) / received.length
-      : 3;
+      : 50; // neutral for absent raters on 1-100 scale
   }
 
   // Average bait rating each player received from others
@@ -296,11 +297,11 @@ app.post('/api/game/rate', auth, async (req, res) => {
     const others = game.participants.filter(id => id !== raterId);
     for (const oid of others) {
       const s = ratings[oid] ?? ratings[String(oid)];
-      if (!s || s < 1 || s > 5)
-        return res.status(400).json({ error: 'Please rate all players 1–5 stars' });
+      if (!s || s < 1 || s > 100)
+        return res.status(400).json({ error: 'Please rate all players 1–100' });
       const b = baitRatings[oid] ?? baitRatings[String(oid)];
-      if (!b || b < 1 || b > 5)
-        return res.status(400).json({ error: 'Please rate bait score for all players 1–5' });
+      if (!b || b < 1 || b > 10)
+        return res.status(400).json({ error: 'Please rate bait score for all players 1–10' });
     }
 
     const newRatings = { ...game.ratings, [String(raterId)]: {} };

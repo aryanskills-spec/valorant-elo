@@ -169,14 +169,19 @@
     .modal-label { font-size: 12px; color: var(--dim); margin-bottom: 14px; }
     .modal-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 
-    /* ── STAR RATING ── */
+    /* ── RATING ROWS ── */
     .rate-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
     .rate-row:last-child { border-bottom: none; }
     .rate-name { flex: 1; font-weight: 600; font-size: 14px; }
-    .stars { display: flex; gap: 3px; }
-    .star { font-size: 26px; cursor: pointer; color: var(--border); transition: color .08s, transform .08s; line-height: 1; }
-    .star.filled { color: var(--gold); }
-    .star:hover  { transform: scale(1.15); }
+
+    /* Performance slider */
+    .perf-slider { width: 140px; accent-color: var(--red); cursor: pointer; }
+    .perf-val { font-size: 18px; font-weight: 800; color: var(--red); min-width: 36px; text-align: right; }
+
+    /* Bait emoji row */
+    .stars { display: flex; gap: 2px; }
+    .star { font-size: 20px; cursor: pointer; opacity: 0.25; transition: opacity .08s, transform .08s; line-height: 1; }
+    .star:hover { transform: scale(1.15); }
 
     /* ── PASS / RIOT ID INPUTS ── */
     .pass-field { margin-bottom: 12px; }
@@ -697,7 +702,7 @@ function renderHistory() {
                   <td class="stat-acs">${s.acs}</td>
                   ${isSynced ? '' : `
                     <td><span class="${ch >= 0 ? 'chip-pos' : 'chip-neg'}">${ch >= 0 ? '+' : ''}${ch}</span></td>
-                    <td style="color:var(--orange)">${bait != null ? '🔥'.repeat(Math.round(bait)) : '—'}</td>
+                    <td style="color:var(--orange)">${bait != null ? `🔥${Math.round(bait)}` : '—'}</td>
                   `}
                 </tr>`;
               }).join('')}
@@ -709,12 +714,12 @@ function renderHistory() {
               const ch   = Math.round(gv(g.elo_changes, p.id) || 0);
               const avg  = gv(g.avg_ratings, p.id);
               const bait = gv(g.avg_bait, p.id);
-              const stars    = avg  != null ? '★'.repeat(Math.round(avg))  : '';
-              const baitFire = bait != null ? '🔥'.repeat(Math.round(bait)) : '';
+              const perfLabel = avg  != null ? `${Math.round(avg)}` : '';
+              const baitFire  = bait != null ? `🔥${Math.round(bait)}` : '';
               return `<div class="chip">
                 <span>${esc(p.name)}</span>
-                ${stars    ? `<span class="chip-stars">${stars}</span>` : ''}
-                ${baitFire ? `<span style="font-size:10px">${baitFire}</span>` : ''}
+                ${perfLabel ? `<span class="chip-stars" style="color:var(--dim)">${perfLabel}</span>` : ''}
+                ${baitFire  ? `<span style="font-size:11px">${baitFire}</span>` : ''}
                 <span class="${ch >= 0 ? 'chip-pos' : 'chip-neg'}">${ch >= 0 ? '+' : ''}${ch}</span>
               </div>`;
             }).join('')}
@@ -778,28 +783,26 @@ function openRating(game) {
         ACS <strong style="color:var(--orange)">${myStats.acs}</strong>
       </div>
     ` : ''}
-    <div class="modal-label">Rate performance 1–5 ★ and bait level 1–5 🔥</div>
+    <div class="modal-label">Drag the slider to rate performance (1–100) and pick a bait level (1–10 🔥)</div>
     ${others.map(p => {
       const ps = md?.playerStats ? gv(md.playerStats, p.id) : null;
       return `
-        <div class="rate-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+        <div class="rate-row" style="flex-direction:column;align-items:flex-start;gap:10px">
           <div style="display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap">
             <span class="rate-name">${esc(p.name)}</span>
             ${ps ? `<span style="font-size:11px;color:var(--dim)">${esc(ps.agent)} · ${ps.kills}/${ps.deaths}/${ps.assists} · ${ps.acs} ACS</span>` : ''}
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);width:42px">Perf</span>
-            <div class="stars" id="st-${p.id}">
-              ${[1,2,3,4,5].map(n =>
-                `<span class="star" onclick="setRating(${p.id},${n})" onmouseover="hoverStar(${p.id},${n})" onmouseout="unhoverStar(${p.id})">★</span>`
-              ).join('')}
-            </div>
+          <div style="display:flex;align-items:center;gap:10px;width:100%">
+            <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);width:42px;flex-shrink:0">Perf</span>
+            <input type="range" class="perf-slider" id="sl-${p.id}" min="1" max="100" value="50"
+              oninput="setRating(${p.id}, this.value)">
+            <span class="perf-val" id="sl-val-${p.id}">50</span>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;padding-bottom:4px">
-            <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--orange);width:42px">Bait</span>
+          <div style="display:flex;align-items:center;gap:10px;padding-bottom:4px">
+            <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--orange);width:42px;flex-shrink:0">Bait</span>
             <div class="stars" id="bt-${p.id}">
-              ${[1,2,3,4,5].map(n =>
-                `<span class="star" style="font-size:22px" onclick="setBait(${p.id},${n})" onmouseover="hoverBait(${p.id},${n})" onmouseout="unhoverBait(${p.id})">🔥</span>`
+              ${[1,2,3,4,5,6,7,8,9,10].map(n =>
+                `<span class="star" onclick="setBait(${p.id},${n})" onmouseover="hoverBait(${p.id},${n})" onmouseout="unhoverBait(${p.id})">🔥</span>`
               ).join('')}
             </div>
           </div>
@@ -810,22 +813,9 @@ function openRating(game) {
 }
 
 function setRating(pid, n) {
-  ratingVals[pid] = n;
-  const c = document.getElementById(`st-${pid}`);
-  if (c) c.querySelectorAll('.star').forEach((s, i) => s.classList.toggle('filled', i < n));
-}
-function hoverStar(pid, n) {
-  const c = document.getElementById(`st-${pid}`);
-  if (c) c.querySelectorAll('.star').forEach((s, i) => {
-    s.style.color = i < n ? 'var(--gold)' : ''; s.style.transform = i < n ? 'scale(1.15)' : '';
-  });
-}
-function unhoverStar(pid) {
-  const c = document.getElementById(`st-${pid}`); if (!c) return;
-  const n = ratingVals[pid] || 0;
-  c.querySelectorAll('.star').forEach((s, i) => {
-    s.style.color = ''; s.style.transform = ''; s.classList.toggle('filled', i < n);
-  });
+  ratingVals[pid] = Number(n);
+  const el = document.getElementById(`sl-val-${pid}`);
+  if (el) el.textContent = n;
 }
 function setBait(pid, n) {
   baitVals[pid] = n;
@@ -835,7 +825,7 @@ function setBait(pid, n) {
 function hoverBait(pid, n) {
   const c = document.getElementById(`bt-${pid}`);
   if (c) c.querySelectorAll('.star').forEach((s, i) => {
-    s.style.opacity = i < n ? '1' : '0.25'; s.style.transform = i < n ? 'scale(1.15)' : '';
+    s.style.opacity = i < n ? '1' : '0.25'; s.style.transform = i < n ? 'scale(1.1)' : '';
   });
 }
 function unhoverBait(pid) {
@@ -851,8 +841,8 @@ async function submitRatings() {
 
   const others = game.participants.map(Number).filter(id => id !== Number(ME.id));
   for (const id of others) {
-    if (!ratingVals[id]) { toast('Rate all players before submitting', true); return; }
-    if (!baitVals[id])   { toast('Rate bait score for all players', true); return; }
+    if (!ratingVals[id]) { toast('Set a performance score for all players', true); return; }
+    if (!baitVals[id])   { toast('Set a bait score for all players', true); return; }
   }
   try {
     const res = await api('POST', '/api/game/rate', {
