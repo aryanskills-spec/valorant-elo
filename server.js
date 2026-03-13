@@ -720,8 +720,20 @@ app.get('/api/match/sync', auth, async (req, res) => {
       if (existingIds.has(matchId)) continue;
 
       const matchPlayers = match.players || [];
+
+      // teams can be either an object {red:{...}, blue:{...}} or an array [{team_id:"Red",...},...]
+      const getTeam = (teamKey) => {
+        if (!match.teams) return null;
+        if (Array.isArray(match.teams))
+          return match.teams.find(t => (t.team_id || t.id || '').toLowerCase() === teamKey);
+        return match.teams[teamKey] || null;
+      };
+
+      const redTeam  = getTeam('red');
+      const blueTeam = getTeam('blue');
       const roundsPlayed = match.metadata?.rounds_played ||
-        ((match.teams?.red?.rounds_won ?? 0) + (match.teams?.blue?.rounds_won ?? 0)) || 1;
+        match.rounds?.length ||
+        ((redTeam?.rounds_won ?? 0) + (blueTeam?.rounds_won ?? 0)) || 1;
 
       // Find which registered players are in this match
       const participants = allPlayers.filter(p => {
@@ -743,9 +755,11 @@ app.get('/api/match/sync', auth, async (req, res) => {
       );
       const ourTeam  = (p1Data?.team_id || p1Data?.team)?.toLowerCase();
       const oppTeam  = ourTeam === 'red' ? 'blue' : 'red';
-      const won      = match.teams?.[ourTeam]?.has_won === true;
-      const ourRounds = match.teams?.[ourTeam]?.rounds_won ?? '?';
-      const oppRounds = match.teams?.[oppTeam]?.rounds_won ?? '?';
+      const ourTeamData = getTeam(ourTeam);
+      const oppTeamData = getTeam(oppTeam);
+      const won       = ourTeamData?.has_won === true;
+      const ourRounds = ourTeamData?.rounds_won ?? '?';
+      const oppRounds = oppTeamData?.rounds_won ?? '?';
 
       // Build per-player stats
       const playerStats = {};
