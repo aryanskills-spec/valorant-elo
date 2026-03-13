@@ -508,55 +508,90 @@ app.post('/api/player/riot-id/admin', auth, adminOnly, async (req, res) => {
   res.json({ ok: true });
 });
 
-// Admin: recalculate all ELO from scratch by replaying completed games in order
-app.post('/api/admin/recalculate-elo', auth, adminOnly, async (req, res) => {
-  try {
-    const { rows: players } = await pool.query('SELECT id FROM players');
-    const { rows: games }   = await pool.query(
-      "SELECT * FROM games WHERE status = 'complete' ORDER BY completed_at ASC"
-    );
+// Shared helper: recompute avg_ratings from raw ratings, then replay all ELO
+async function runFullRecalc() {
+  const { rows: players } = await pool.query('SELECT id FROM players');
+  const { rows: games }   = await pool.query(
+    "SELECT * FROM games WHERE status = 'complete' ORDER BY completed_at ASC"
+  );
 
-    // Reset every player to baseline
-    await pool.query('UPDATE players SET elo = 50, wins = 0, losses = 0, games = 0');
+  await pool.query('UPDATE players SET elo = 50, wins = 0, losses = 0, games = 0');
 
-    // Track games played so far for K-factor
-    const gamesCounts = {};
-    for (const p of players) gamesCounts[p.id] = 0;
+  const gamesCounts = {};
+  for (const p of players) gamesCounts[p.id] = 0;
 
-    for (const game of games) {
-      const { participants, won } = game;
+  for (const game of games) {
+    const { participants, won } = game;
 
-      // Normalise avg_ratings keys to numbers (JSONB stores them as strings)
-      const avgRatings = {};
-      for (const [pid, val] of Object.entries(game.avg_ratings || {}))
-        avgRatings[Number(pid)] = Number(val);
-
-      // Normalise playerStats keys to numbers
-      const rawStats = game.match_data?.playerStats || {};
-      const playerStats = {};
-      for (const [pid, val] of Object.entries(rawStats))
-        playerStats[Number(pid)] = val;
-
-      const currentCounts = {};
-      for (const pid of participants) currentCounts[pid] = gamesCounts[pid] ?? 0;
-
-      const eloChanges = calcElo(participants, won, avgRatings, currentCounts, playerStats);
-
-      const col = won ? 'wins' : 'losses';
-      for (const pid of participants) {
-        const change = eloChanges[pid] || 0;
-        await pool.query(
-          `UPDATE players SET elo = GREATEST(1, LEAST(100, elo + $1)), games = games + 1, ${col} = ${col} + 1 WHERE id = $2`,
-          [change, pid]
-        );
-        gamesCounts[pid] = (gamesCounts[pid] ?? 0) + 1;
+    const ratings = game.ratings || {};
+    const avgRatings = {};
+    for (const pid of participants) {
+      const received = [];
+      for (const rid of participants) {
+        if (rid === pid) continue;
+        const v = ratings[String(rid)]?.[String(pid)];
+        if (v !== undefined) received.push(Number(v));
       }
+      avgRatings[pid] = received.length > 0
+        ? received.reduce((a, b) => a + b, 0) / received.length
+        : 50;
+    }
+    await pool.query('UPDATE games SET avg_ratings = $1 WHERE id = $2', [avgRatings, game.id]);
 
-      // Persist updated elo_changes so the history graph stays accurate
-      await pool.query('UPDATE games SET elo_changes = $1 WHERE id = $2', [eloChanges, game.id]);
+    const rawStats = game.match_data?.playerStats || {};
+    const playerStats = {};
+    for (const [pid, val] of Object.entries(rawStats))
+      playerStats[Number(pid)] = val;
+
+    const currentCounts = {};
+    for (const pid of participants) currentCounts[pid] = gamesCounts[pid] ?? 0;
+
+    const eloChanges = calcElo(participants, won, avgRatings, currentCounts, playerStats);
+
+    const col = won ? 'wins' : 'losses';
+    for (const pid of participants) {
+      const change = eloChanges[pid] || 0;
+      await pool.query(
+        `UPDATE players SET elo = GREATEST(1, LEAST(100, elo + $1)), games = games + 1, ${col} = ${col} + 1 WHERE id = $2`,
+        [change, pid]
+      );
+      gamesCounts[pid] = (gamesCounts[pid] ?? 0) + 1;
     }
 
-    res.json({ ok: true, gamesReplayed: games.length });
+    await pool.query('UPDATE games SET elo_changes = $1 WHERE id = $2', [eloChanges, game.id]);
+  }
+
+  return games.length;
+}
+
+// Admin: recalculate all ELO from scratch
+app.post('/api/admin/recalculate-elo', auth, adminOnly, async (req, res) => {
+  try {
+    const gamesReplayed = await runFullRecalc();
+    res.json({ ok: true, gamesReplayed });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error: ' + e.message });
+  }
+});
+
+// Admin: update raw ratings for a completed game, then recalculate all ELO
+app.post('/api/admin/game/:id/ratings', auth, adminOnly, async (req, res) => {
+  try {
+    const gameId = req.params.id;
+    const { ratings } = req.body; // { [raterId]: { [rateeId]: value } }
+    if (!ratings || typeof ratings !== 'object')
+      return res.status(400).json({ error: 'Invalid ratings' });
+
+    const { rows } = await pool.query(
+      "SELECT id FROM games WHERE id = $1 AND status = 'complete'", [gameId]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Game not found' });
+
+    await pool.query('UPDATE games SET ratings = $1 WHERE id = $2', [ratings, gameId]);
+
+    const gamesReplayed = await runFullRecalc();
+    res.json({ ok: true, gamesReplayed });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error: ' + e.message });

@@ -357,6 +357,19 @@
     </div>
   </div>
 
+  <!-- Edit Ratings modal (admin) -->
+  <div id="M-editratings" class="modal" style="max-width:520px" hidden>
+    <div class="modal-head">
+      <span class="modal-title">Edit Ratings</span>
+      <button class="btn-ghost" onclick="closeModals()">✕</button>
+    </div>
+    <div class="modal-body" id="editratings-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" id="editratings-save" onclick="submitEditRatings()">Save &amp; Recalc ELO</button>
+    </div>
+  </div>
+
   <!-- Riot ID modal -->
   <div id="M-riotid" class="modal" hidden>
     <div class="modal-head">
@@ -753,6 +766,7 @@ function renderHistory() {
             ${md?.score ? `<span class="hist-score">${esc(md.score)}</span>` : ''}
             <span class="badge ${g.won ? 'badge-win' : 'badge-loss'}">${g.won ? 'WIN' : 'LOSS'}</span>
             ${isSynced ? `<span class="badge badge-pend">⏳ ${ratedCount}/${g.participants.length}</span>` : ''}
+            ${ME.isAdmin === true && !isSynced ? `<button class="btn btn-secondary btn-sm" onclick="openEditRatings(${g.id})" title="Edit ratings">✏</button>` : ''}
             ${ME.isAdmin === true && !isSynced ? `<button class="btn btn-danger btn-sm" onclick="deleteGame(${g.id})" title="Delete game &amp; reverse ELO">🗑 Del</button>` : ''}
           </div>
         </div>
@@ -821,7 +835,7 @@ function renderHistory() {
 // ─────────────────────────────────────────────
 function showModal(id) {
   document.getElementById('overlay').hidden = false;
-  ['rating','changepass','resetpass','riotid'].forEach(m =>
+  ['rating','changepass','resetpass','riotid','editratings'].forEach(m =>
     document.getElementById(`M-${m}`).hidden = (m !== id)
   );
 }
@@ -930,6 +944,83 @@ async function submitRatings() {
     toast(res.finalized ? '🏆 All rated — ELO updated!' : '✓ Ratings submitted!');
     await fetchState();
   } catch (e) { toast(e.message, true); }
+}
+
+// ── Edit Ratings modal (admin)
+let editRatingsGameId = null;
+let editRatingsVals   = {}; // { raterId: { rateeId: value } }
+
+function openEditRatings(gameId) {
+  const game = DATA.games.find(g => Number(g.id) === Number(gameId));
+  if (!game) return;
+  editRatingsGameId = game.id;
+  editRatingsVals   = {};
+
+  const ps = game.participants
+    .map(id => DATA.players.find(p => Number(p.id) === Number(id)))
+    .filter(Boolean);
+
+  const existingRatings = game.ratings || {};
+
+  document.getElementById('editratings-body').innerHTML = ps.map(rater => {
+    const ratees = ps.filter(p => p.id !== rater.id);
+    if (!ratees.length) return '';
+    return `
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">
+          ${esc(rater.name)}'s ratings
+        </div>
+        ${ratees.map(ratee => {
+          const cur = existingRatings[String(rater.id)]?.[String(ratee.id)] ?? 50;
+          return `
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+              <span style="width:70px;font-size:13px;flex-shrink:0">${esc(ratee.name)}</span>
+              <input type="range" min="1" max="100" value="${cur}"
+                id="er-${rater.id}-${ratee.id}"
+                oninput="setEditRating(${rater.id},${ratee.id},this.value)"
+                style="flex:1">
+              <span id="er-val-${rater.id}-${ratee.id}" style="width:28px;text-align:right;font-size:13px">${cur}</span>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }).join('');
+
+  // Pre-populate editRatingsVals from existing
+  for (const rater of ps) {
+    editRatingsVals[rater.id] = {};
+    for (const ratee of ps) {
+      if (rater.id === ratee.id) continue;
+      editRatingsVals[rater.id][ratee.id] =
+        existingRatings[String(rater.id)]?.[String(ratee.id)] ?? 50;
+    }
+  }
+
+  showModal('editratings');
+}
+
+function setEditRating(raterId, rateeId, val) {
+  if (!editRatingsVals[raterId]) editRatingsVals[raterId] = {};
+  editRatingsVals[raterId][rateeId] = Number(val);
+  const el = document.getElementById(`er-val-${raterId}-${rateeId}`);
+  if (el) el.textContent = val;
+}
+
+async function submitEditRatings() {
+  const btn = document.getElementById('editratings-save');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const res = await api('POST', `/api/admin/game/${editRatingsGameId}/ratings`,
+      { ratings: editRatingsVals });
+    closeModals();
+    toast(`✓ Ratings saved — ${res.gamesReplayed} games recalculated`);
+    await fetchState();
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save & Recalc ELO';
+  }
 }
 
 // ── Admin actions
