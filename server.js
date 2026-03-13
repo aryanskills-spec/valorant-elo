@@ -731,9 +731,11 @@ app.get('/api/match/sync', auth, async (req, res) => {
 
       const redTeam  = getTeam('red');
       const blueTeam = getTeam('blue');
+      // v4 nests rounds as {won, lost} on each team; v2/v3 used rounds_won at top level
+      const teamRounds = (t) => t ? ((t.rounds?.won ?? t.rounds_won ?? 0) + (t.rounds?.lost ?? 0)) : 0;
       const roundsPlayed = match.metadata?.rounds_played ||
         match.rounds?.length ||
-        ((redTeam?.rounds_won ?? 0) + (blueTeam?.rounds_won ?? 0)) || 1;
+        teamRounds(redTeam) || teamRounds(blueTeam) || 1;
 
       // Find which registered players are in this match
       const participants = allPlayers.filter(p => {
@@ -757,9 +759,10 @@ app.get('/api/match/sync', auth, async (req, res) => {
       const oppTeam  = ourTeam === 'red' ? 'blue' : 'red';
       const ourTeamData = getTeam(ourTeam);
       const oppTeamData = getTeam(oppTeam);
-      const won       = ourTeamData?.has_won === true;
-      const ourRounds = ourTeamData?.rounds_won ?? '?';
-      const oppRounds = oppTeamData?.rounds_won ?? '?';
+      // v4 uses team.won; v2/v3 used team.has_won. rounds nested as team.rounds.won in v4.
+      const won       = ourTeamData?.won === true || ourTeamData?.has_won === true;
+      const ourRounds = ourTeamData?.rounds?.won ?? ourTeamData?.rounds_won ?? '?';
+      const oppRounds = oppTeamData?.rounds?.won ?? oppTeamData?.rounds_won ?? '?';
 
       // Build per-player stats
       const playerStats = {};
