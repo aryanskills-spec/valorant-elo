@@ -508,6 +508,29 @@ app.post('/api/player/riot-id/admin', auth, adminOnly, async (req, res) => {
   res.json({ ok: true });
 });
 
+// Temporary debug route — admin only, returns raw v4 response for first player
+app.get('/api/debug/v4-sample', auth, adminOnly, async (req, res) => {
+  const { rows } = await pool.query("SELECT * FROM players WHERE riot_id IS NOT NULL AND riot_id LIKE '%#%' LIMIT 1");
+  if (!rows[0]) return res.status(400).json({ error: 'No player with Riot ID' });
+  const [name, tag] = rows[0].riot_id.split('#').map(s => s.trim());
+  const region  = process.env.VALORANT_REGION || 'na';
+  const headers = { 'User-Agent': 'val-elo/1.0' };
+  if (process.env.HENRIK_API_KEY) headers['Authorization'] = process.env.HENRIK_API_KEY;
+  const url = `https://api.henrikdev.xyz/valorant/v4/matches/${region}/pc/${encodeURIComponent(name)}/${encodeURIComponent(tag)}?size=1`;
+  const apiRes = await fetch(url, { headers });
+  const data = await apiRes.json();
+  // Return just the first match's metadata + first player + kills[0] so we can see field names
+  const m = data.data?.[0];
+  res.json({
+    status: apiRes.status,
+    metadata: m?.metadata,
+    first_player: m?.players?.[0],
+    teams: m?.teams,
+    kills_sample: m?.kills?.slice(0, 2),
+    raw_error: data.errors || data.error || null,
+  });
+});
+
 // ─────────────────────────────────────────────
 // SYNC — fetch recent matches from Henrik Dev API
 // Any authenticated user can trigger a sync
