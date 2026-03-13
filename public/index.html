@@ -228,6 +228,7 @@
     <div class="header-right">
       <span class="user-label" id="headerUser"></span>
       <button id="btnSync" class="btn btn-secondary btn-sm" onclick="doSync()">🔄 Sync</button>
+      <button id="btnRecalc" class="btn btn-danger btn-sm" onclick="doRecalcElo()" title="Recalculate all ELO from scratch" hidden>⚙ Recalc ELO</button>
       <button class="btn-ghost" onclick="openRiotId()" title="Set Riot ID">🎯</button>
       <button class="btn-ghost" onclick="openChangePass()" title="Change Password">🔑</button>
       <button id="btnResetPass" class="btn-ghost" onclick="openResetPass()" title="Reset a player's password" hidden>🛡</button>
@@ -457,6 +458,27 @@ async function doLogout() {
   document.getElementById('P-app').hidden   = true;
   document.getElementById('P-login').hidden = false;
   document.getElementById('loginPass').value = '';
+}
+
+// ─────────────────────────────────────────────
+// RECALCULATE ELO (admin only)
+// ─────────────────────────────────────────────
+async function doRecalcElo() {
+  if (!confirm('Recalculate ALL ELO from scratch?\n\nThis replays every completed game in order and overwrites current ELO values. Cannot be undone.')) return;
+  const btn = document.getElementById('btnRecalc');
+  btn.disabled = true;
+  btn.textContent = '⏳ Working…';
+  try {
+    const res = await api('POST', '/api/admin/recalculate-elo');
+    toast(`✓ Recalculated — ${res.gamesReplayed} games replayed`);
+    eloChartGameCount = -1; // force graph refresh
+    await fetchState();
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⚙ Recalc ELO';
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -1032,6 +1054,7 @@ function showApp() {
   document.getElementById('P-app').hidden   = false;
   document.getElementById('headerUser').textContent  = ME.name;
   document.getElementById('btnResetPass').hidden = !ME.isAdmin;
+  document.getElementById('btnRecalc').hidden    = !ME.isAdmin;
   startPolling();
 }
 

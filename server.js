@@ -508,6 +508,61 @@ app.post('/api/player/riot-id/admin', auth, adminOnly, async (req, res) => {
   res.json({ ok: true });
 });
 
+// Admin: recalculate all ELO from scratch by replaying completed games in order
+app.post('/api/admin/recalculate-elo', auth, adminOnly, async (req, res) => {
+  try {
+    const { rows: players } = await pool.query('SELECT id FROM players');
+    const { rows: games }   = await pool.query(
+      "SELECT * FROM games WHERE status = 'complete' ORDER BY completed_at ASC"
+    );
+
+    // Reset every player to baseline
+    await pool.query('UPDATE players SET elo = 50, wins = 0, losses = 0, games = 0');
+
+    // Track games played so far for K-factor
+    const gamesCounts = {};
+    for (const p of players) gamesCounts[p.id] = 0;
+
+    for (const game of games) {
+      const { participants, won } = game;
+
+      // Normalise avg_ratings keys to numbers (JSONB stores them as strings)
+      const avgRatings = {};
+      for (const [pid, val] of Object.entries(game.avg_ratings || {}))
+        avgRatings[Number(pid)] = Number(val);
+
+      // Normalise playerStats keys to numbers
+      const rawStats = game.match_data?.playerStats || {};
+      const playerStats = {};
+      for (const [pid, val] of Object.entries(rawStats))
+        playerStats[Number(pid)] = val;
+
+      const currentCounts = {};
+      for (const pid of participants) currentCounts[pid] = gamesCounts[pid] ?? 0;
+
+      const eloChanges = calcElo(participants, won, avgRatings, currentCounts, playerStats);
+
+      const col = won ? 'wins' : 'losses';
+      for (const pid of participants) {
+        const change = eloChanges[pid] || 0;
+        await pool.query(
+          `UPDATE players SET elo = GREATEST(1, LEAST(100, elo + $1)), games = games + 1, ${col} = ${col} + 1 WHERE id = $2`,
+          [change, pid]
+        );
+        gamesCounts[pid] = (gamesCounts[pid] ?? 0) + 1;
+      }
+
+      // Persist updated elo_changes so the history graph stays accurate
+      await pool.query('UPDATE games SET elo_changes = $1 WHERE id = $2', [eloChanges, game.id]);
+    }
+
+    res.json({ ok: true, gamesReplayed: games.length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error: ' + e.message });
+  }
+});
+
 // ELO history — replays all completed games from 50 to build per-player timeline
 app.get('/api/elo-history', auth, async (req, res) => {
   try {
