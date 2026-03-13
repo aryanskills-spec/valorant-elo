@@ -107,14 +107,13 @@
     .wl-small .l { color: var(--red); font-weight: 700; }
 
     /* ── ADMIN PANEL ── */
-    .admin-game-info { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-    .rater-list { padding: 10px 20px; }
-    .rater-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; }
-    .rater-done    { color: var(--green); }
-    .rater-pending { color: var(--orange); }
+    .synced-row { padding: 10px 20px; border-bottom: 1px solid var(--border); }
+    .synced-row:last-child { border-bottom: none; }
+    .synced-row-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+    .synced-row-sub { font-size: 11px; color: var(--dim); }
     .admin-actions { display: flex; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--border); flex-wrap: wrap; }
 
-    /* ── GAME HISTORY (rich cards) ── */
+    /* ── GAME HISTORY ── */
     .hist-item { padding: 14px 18px; border-bottom: 1px solid var(--border); }
     .hist-item:last-child { border-bottom: none; }
     .hist-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
@@ -122,10 +121,10 @@
     .hist-date { font-size: 11px; color: var(--dim); display: block; margin-bottom: 3px; }
     .hist-map  { font-size: 13px; font-weight: 700; color: var(--text); }
     .hist-mode { font-size: 11px; color: var(--dim); margin-left: 6px; }
-    .hist-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .hist-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
     .hist-score { font-size: 16px; font-weight: 800; color: var(--text); }
 
-    /* Stats table for synced games */
+    /* Stats table */
     .stat-table { width: 100%; border-collapse: collapse; font-size: 12px; }
     .stat-table th { color: var(--dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 10px; padding: 4px 6px; text-align: left; border-bottom: 1px solid var(--border); }
     .stat-table td { padding: 6px 6px; border-bottom: 1px solid rgba(42,58,74,.5); }
@@ -139,17 +138,22 @@
     .kd-bad   { color: var(--red); }
     .kd-even  { color: var(--dim); }
 
-    /* Simple chips for manual games */
+    /* Chips for completed games without stats */
     .hist-chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .chip { display: flex; align-items: center; gap: 5px; padding: 3px 9px; background: var(--card2); border-radius: 20px; font-size: 12px; }
     .chip-stars { color: var(--gold); font-size: 10px; letter-spacing: -1px; }
     .chip-pos { color: var(--green); font-weight: 700; font-size: 11px; }
     .chip-neg { color: var(--red);   font-weight: 700; font-size: 11px; }
 
+    /* Pending-ratings footer inside hist-item */
+    .hist-pending { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .hist-pending-label { font-size: 11px; color: var(--orange); font-weight: 600; }
+
     /* ── BADGE ── */
     .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
     .badge-win  { background: rgba(76,175,80,.18); color: var(--green); border: 1px solid rgba(76,175,80,.35); }
     .badge-loss { background: rgba(255,70,85,.18);  color: var(--red);   border: 1px solid rgba(255,70,85,.35); }
+    .badge-pend { background: rgba(255,156,63,.15); color: var(--orange); border: 1px solid rgba(255,156,63,.35); }
 
     /* ── EMPTY STATE ── */
     .empty { text-align: center; padding: 44px 24px; color: var(--dim); }
@@ -164,24 +168,6 @@
     .modal-foot { padding: 12px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
     .modal-label { font-size: 12px; color: var(--dim); margin-bottom: 14px; }
     .modal-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
-
-    /* ── PLAYER CHECKBOX ── */
-    .pcheck { display: flex; align-items: center; gap: 12px; padding: 10px 13px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; margin-bottom: 7px; transition: all .15s; user-select: none; }
-    .pcheck:hover { border-color: var(--red); }
-    .pcheck.sel { border-color: var(--red); background: rgba(255,70,85,.08); }
-    .check-box { width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; transition: all .15s; }
-    .pcheck.sel .check-box { background: var(--red); border-color: var(--red); color: #fff; }
-    .pcheck-name { font-weight: 600; flex: 1; }
-    .pcheck-elo  { font-size: 12px; color: var(--dim); }
-    .sel-row { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 8px; }
-    .sel-link { font-size: 12px; color: var(--dim); cursor: pointer; text-decoration: underline; }
-    .sel-link:hover { color: var(--text); }
-
-    /* ── OUTCOME TOGGLE ── */
-    .outcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
-    .out-btn { padding: 20px 12px; border: 2px solid var(--border); border-radius: 6px; background: transparent; color: var(--text); cursor: pointer; font-size: 15px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; transition: all .15s; }
-    .out-btn.win:hover, .out-btn.win.sel { border-color: var(--green); background: rgba(76,175,80,.12); color: var(--green); }
-    .out-btn.loss:hover, .out-btn.loss.sel { border-color: var(--red); background: rgba(255,70,85,.12); color: var(--red); }
 
     /* ── STAR RATING ── */
     .rate-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
@@ -235,7 +221,7 @@
     <div class="logo">VAL<span>·</span>ELO</div>
     <div class="header-right">
       <span class="user-label" id="headerUser"></span>
-      <button id="btnNewGame" class="btn btn-primary btn-sm" onclick="openNewGame()" hidden>+ New Game</button>
+      <button id="btnSync" class="btn btn-secondary btn-sm" onclick="doSync()">🔄 Sync</button>
       <button class="btn-ghost" onclick="openRiotId()" title="Set Riot ID">🎯</button>
       <button class="btn-ghost" onclick="openChangePass()" title="Change Password">🔑</button>
       <button id="btnResetPass" class="btn-ghost" onclick="openResetPass()" title="Reset a player's password" hidden>🛡</button>
@@ -245,17 +231,18 @@
 
   <div class="main">
 
-    <!-- Top banners + admin panel -->
     <div class="top-section">
 
-      <div id="B-rate" class="banner banner-alert" hidden>
+      <!-- Banner: unrated synced game waiting -->
+      <div id="B-sync" class="banner banner-alert" hidden>
         <div>
-          <div class="banner-text">🎮 New game — rate your teammates!</div>
-          <div class="banner-sub" id="B-rate-sub"></div>
+          <div class="banner-text">🎮 Rate your teammates from a recent game!</div>
+          <div class="banner-sub" id="B-sync-sub"></div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openRating()">Rate Now →</button>
+        <button class="btn btn-primary btn-sm" id="B-sync-btn">Rate Now →</button>
       </div>
 
+      <!-- Banner: rated, waiting for others -->
       <div id="B-rated" class="banner banner-ok" hidden>
         <div>
           <div class="banner-text" style="color:var(--green)">✓ Ratings submitted</div>
@@ -263,26 +250,16 @@
         </div>
       </div>
 
+      <!-- Banner: spectator of pending game -->
       <div id="B-spec" class="banner banner-dim" hidden>
         <div class="banner-text" style="color:var(--dim)">⏳ A game is in progress — wait for results</div>
       </div>
 
-      <div id="admin-panel" class="card" hidden>
-        <div class="card-header">
-          <span class="card-label">Pending Game</span>
-          <span id="admin-progress" style="font-size:12px;color:var(--dim)"></span>
-        </div>
-        <div class="admin-game-info" id="admin-game-info"></div>
-        <div class="rater-list" id="admin-rater-list"></div>
-        <div class="admin-actions">
-          <button class="btn btn-sm btn-secondary" onclick="cancelGame()">✕ Cancel Game</button>
-          <button class="btn btn-sm btn-danger"    onclick="forceFinalize()">⚡ Force Finalize</button>
-        </div>
-      </div>
+      <!-- Admin panel: synced games awaiting ratings -->
+      <div id="admin-panel" class="card" hidden></div>
 
-    </div><!-- /top-section -->
+    </div>
 
-    <!-- Two-column layout: leaderboard left, game history right -->
     <div class="two-col">
 
       <!-- LEFT: Leaderboard -->
@@ -301,15 +278,15 @@
         <div class="card" style="margin-bottom:0">
           <div class="card-header">
             <span class="card-label">Recent Games</span>
-            <span style="font-size:11px;color:var(--dim)">synced games show full stats</span>
+            <span style="font-size:11px;color:var(--dim)">auto-synced from Valorant</span>
           </div>
           <div id="history"></div>
         </div>
       </div>
 
-    </div><!-- /two-col -->
-  </div><!-- /main -->
-</div><!-- /P-app -->
+    </div>
+  </div>
+</div>
 
 <!-- MODALS -->
 <div id="overlay" hidden onclick="overlayBg(event)">
@@ -324,19 +301,6 @@
     <div class="modal-foot">
       <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
       <button class="btn btn-primary" onclick="submitRatings()">Submit Ratings</button>
-    </div>
-  </div>
-
-  <!-- New game modal (admin) -->
-  <div id="M-newgame" class="modal" hidden>
-    <div class="modal-head">
-      <span class="modal-title">New Game</span>
-      <button class="btn-ghost" onclick="closeModals()">✕</button>
-    </div>
-    <div class="modal-body" id="newgame-body"></div>
-    <div class="modal-foot">
-      <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitNewGame()">Post Game</button>
     </div>
   </div>
 
@@ -416,18 +380,14 @@
 // ─────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────
-let ME   = null;
-let DATA = null;
+let ME    = null;
+let DATA  = null;
 let TOKEN = localStorage.getItem('val-elo-token');
 let pollTimer = null;
-let prevPendingId = null;
-
-let ngParticipants = new Set();
-let ngWon = null;
-let ngMatchData = null;   // full match data from Henrik API sync
 
 let ratingVals = {};
 let baitVals   = {};
+let ratingGameId = null; // which game is currently being rated
 
 // ─────────────────────────────────────────────
 // API HELPER
@@ -481,24 +441,37 @@ async function doLogout() {
 }
 
 // ─────────────────────────────────────────────
+// SYNC
+// ─────────────────────────────────────────────
+async function doSync() {
+  const btn = document.getElementById('btnSync');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">⟳</span>';
+  try {
+    const res = await api('GET', '/api/match/sync');
+    toast(res.message || `Imported ${res.imported} game(s)`);
+    if (res.imported > 0) await fetchState();
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔄 Sync';
+  }
+}
+
+// ─────────────────────────────────────────────
 // POLLING
 // ─────────────────────────────────────────────
 async function fetchState() {
   try {
-    const data = await api('GET', '/api/state');
-    const newPendingId = data.pendingGame?.id || null;
-    if (DATA) {
-      if (prevPendingId && !newPendingId)   toast('🏆 Game finalized! ELO updated.');
-      else if (!prevPendingId && newPendingId) toast('🎮 New game posted — rate your teammates!');
-    }
-    prevPendingId = newPendingId;
-    DATA = data;
+    DATA = await api('GET', '/api/state');
+    DATA.syncedGames = DATA.syncedGames || [];
     renderAll();
   } catch (e) {
     if (e.message.includes('Session expired') || e.message.includes('Not logged in')) doLogout();
   }
 }
-function startPolling() { pollTimer = setInterval(fetchState, 5000); }
+function startPolling() { pollTimer = setInterval(fetchState, 8000); }
 function stopPolling()  { clearInterval(pollTimer); pollTimer = null; }
 
 // ─────────────────────────────────────────────
@@ -514,50 +487,115 @@ function renderAll() {
 }
 
 function renderBanners() {
-  const pg = DATA.pendingGame;
-  hide('B-rate'); hide('B-rated'); hide('B-spec');
-  if (!pg) return;
-  const isParticipant = pg.participants.map(Number).includes(Number(ME.id));
-  const hasRated      = !!gv(pg.ratings, ME.id);
-  if (!isParticipant) { show('B-spec'); return; }
-  if (!hasRated) {
-    const outcome   = pg.won ? '🏆 WIN' : '💀 LOSS';
-    const remaining = pg.pending_raters.length;
-    document.getElementById('B-rate-sub').textContent =
-      `${outcome} · ${remaining} player${remaining !== 1 ? 's' : ''} still need to rate`;
-    show('B-rate');
-  } else {
-    const left = pg.pending_raters.map(Number).filter(id => id !== Number(ME.id)).length;
+  hide('B-sync'); hide('B-rated'); hide('B-spec');
+
+  // Find synced games where I'm a participant and haven't rated yet
+  const myUnrated = DATA.syncedGames.filter(g =>
+    g.participants.map(Number).includes(Number(ME.id)) &&
+    g.pending_raters.map(Number).includes(Number(ME.id))
+  );
+
+  if (myUnrated.length > 0) {
+    const g  = myUnrated[0];
+    const md = g.match_data;
+    const ratedCount = g.participants.length - g.pending_raters.length;
+    const extra = myUnrated.length > 1 ? ` · ${myUnrated.length} games pending` : '';
+    document.getElementById('B-sync-sub').textContent =
+      `${md?.map || 'Match'} · ${g.won ? 'WIN' : 'LOSS'} · ${md?.score || ''} · ${ratedCount}/${g.participants.length} rated${extra}`;
+    document.getElementById('B-sync-btn').onclick = () => openRating(g);
+    show('B-sync');
+    return;
+  }
+
+  // Check if I rated something in a synced game and waiting for others
+  const myRated = DATA.syncedGames.filter(g =>
+    g.participants.map(Number).includes(Number(ME.id)) &&
+    !g.pending_raters.map(Number).includes(Number(ME.id))
+  );
+  if (myRated.length > 0) {
+    const left = myRated[0].pending_raters.length;
     document.getElementById('B-rated-sub').textContent =
       left > 0 ? `Waiting for ${left} more player${left !== 1 ? 's' : ''} to rate...` : 'Processing...';
     show('B-rated');
+    return;
+  }
+
+  // Legacy: pending (manually created) game
+  const pg = DATA.pendingGame;
+  if (!pg) return;
+  const isParticipant = pg.participants.map(Number).includes(Number(ME.id));
+  if (!isParticipant) { show('B-spec'); return; }
+  const hasRated = !!gv(pg.ratings, ME.id);
+  if (!hasRated) {
+    show('B-spec'); // treat like spectator until openRating is called for pending games
   }
 }
 
 function renderAdminPanel() {
   const panel = document.getElementById('admin-panel');
-  if (!ME.isAdmin || !DATA.pendingGame) { panel.hidden = true; return; }
+  if (!ME.isAdmin) { panel.hidden = true; return; }
+
+  const synced = DATA.syncedGames;
+  const pg     = DATA.pendingGame;
+
+  if (!synced.length && !pg) { panel.hidden = true; return; }
   panel.hidden = false;
-  const pg = DATA.pendingGame;
-  const done = pg.participants.length - pg.pending_raters.length;
-  document.getElementById('admin-progress').textContent = `${done}/${pg.participants.length} rated`;
-  const names = pg.participants.map(id => DATA.players.find(p => Number(p.id) === Number(id))?.name || `#${id}`).join(', ');
-  document.getElementById('admin-game-info').innerHTML = `
-    <span class="badge ${pg.won ? 'badge-win' : 'badge-loss'}" style="font-size:13px;padding:4px 14px">
-      ${pg.won ? '🏆 WIN' : '💀 LOSS'}
-    </span>
-    <span style="font-size:13px;color:var(--dim)">${names}</span>`;
-  document.getElementById('admin-rater-list').innerHTML = pg.participants.map(id => {
-    const p    = DATA.players.find(p => Number(p.id) === Number(id));
-    const done = !pg.pending_raters.map(Number).includes(Number(id));
-    return `<div class="rater-row ${done ? 'rater-done' : 'rater-pending'}">
-      <span>${done ? '✓' : '⏳'}</span><span>${esc(p ? p.name : `#${id}`)}</span>
-      <span style="font-size:11px;opacity:.6">${done ? 'submitted' : 'waiting...'}</span></div>`;
-  }).join('');
+
+  let html = `<div class="card-header"><span class="card-label">Awaiting Ratings</span><span style="font-size:12px;color:var(--dim)">${synced.length} pending</span></div>`;
+
+  for (const g of synced) {
+    const done  = g.participants.length - g.pending_raters.length;
+    const md    = g.match_data;
+    const names = g.participants
+      .map(id => DATA.players.find(p => Number(p.id) === Number(id))?.name || `#${id}`)
+      .join(', ');
+    html += `
+      <div class="synced-row">
+        <div class="synced-row-top">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="badge ${g.won ? 'badge-win' : 'badge-loss'}">${g.won ? 'WIN' : 'LOSS'}</span>
+            ${md?.map   ? `<span style="font-size:12px;font-weight:600">${esc(md.map)}</span>` : ''}
+            ${md?.score ? `<span style="font-size:12px;color:var(--dim)">${esc(md.score)}</span>` : ''}
+            <span style="font-size:11px;color:var(--orange)">${done}/${g.participants.length} rated</span>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sm btn-danger" onclick="forceFinalize(${g.id})">⚡ Force</button>
+            <button class="btn btn-sm btn-secondary" onclick="deleteSyncedGame(${g.id})">✕</button>
+          </div>
+        </div>
+        <div class="synced-row-sub">${esc(names)} · ${g.game_date || ''}</div>
+      </div>`;
+  }
+
+  // Legacy pending game
+  if (pg) {
+    const done  = pg.participants.length - pg.pending_raters.length;
+    const names = pg.participants
+      .map(id => DATA.players.find(p => Number(p.id) === Number(id))?.name || `#${id}`)
+      .join(', ');
+    html += `
+      <div class="synced-row" style="background:rgba(255,70,85,.04)">
+        <div class="synced-row-top">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="badge ${pg.won ? 'badge-win' : 'badge-loss'}">${pg.won ? 'WIN' : 'LOSS'}</span>
+            <span style="font-size:11px;color:var(--dim)">Manual game</span>
+            <span style="font-size:11px;color:var(--orange)">${done}/${pg.participants.length} rated</span>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sm btn-danger" onclick="forceFinalize(${pg.id})">⚡ Force</button>
+            <button class="btn btn-sm btn-secondary" onclick="cancelGame()">✕</button>
+          </div>
+        </div>
+        <div class="synced-row-sub">${esc(names)}</div>
+      </div>`;
+  }
+
+  panel.innerHTML = html;
 }
 
 function renderLeaderboard() {
   const sorted = [...DATA.players].sort((a, b) => b.elo - a.elo);
+  const total  = DATA.games.length + DATA.syncedGames.length;
   document.getElementById('gameCountLabel').textContent =
     `${DATA.games.length} game${DATA.games.length !== 1 ? 's' : ''}`;
   document.getElementById('leaderboard').innerHTML = sorted.map((p, i) => {
@@ -582,25 +620,31 @@ function renderLeaderboard() {
 
 function renderHistory() {
   const el = document.getElementById('history');
-  if (!DATA.games.length) {
+  const allGames = [...DATA.syncedGames, ...DATA.games];
+
+  if (!allGames.length) {
     el.innerHTML = `<div class="empty">
       <div class="empty-icon">🎮</div>
       <div style="font-size:15px;font-weight:600;margin-bottom:6px">No games yet</div>
-      <div style="font-size:13px">${ME.isAdmin ? 'Hit <strong>+ New Game</strong> after your next match' : 'Aryan will post a game after your next match'}</div>
+      <div style="font-size:13px">Hit <strong>🔄 Sync</strong> to pull your recent Valorant matches</div>
     </div>`;
     return;
   }
 
-  el.innerHTML = DATA.games.map(g => {
+  el.innerHTML = allGames.map(g => {
+    const isSynced = g.status === 'synced';
     const ps = g.participants
       .map(id => DATA.players.find(p => Number(p.id) === Number(id)))
       .filter(Boolean);
     const md = g.match_data;
 
-    // Sort players by ACS desc (if available)
     const sorted = md?.playerStats
       ? [...ps].sort((a, b) => (gv(md.playerStats, b.id)?.acs || 0) - (gv(md.playerStats, a.id)?.acs || 0))
       : ps;
+
+    const ratedCount  = g.participants.length - (g.pending_raters?.length || 0);
+    const iAmInGame   = g.participants.map(Number).includes(Number(ME.id));
+    const iHaveRated  = iAmInGame && !g.pending_raters?.map(Number).includes(Number(ME.id));
 
     return `
       <div class="hist-item">
@@ -612,14 +656,16 @@ function renderHistory() {
           <div class="hist-right">
             ${md?.score ? `<span class="hist-score">${esc(md.score)}</span>` : ''}
             <span class="badge ${g.won ? 'badge-win' : 'badge-loss'}">${g.won ? 'WIN' : 'LOSS'}</span>
-            ${ME.isAdmin === true ? `<button class="btn btn-danger btn-sm" onclick="deleteGame(${g.id})" title="Delete game &amp; reverse ELO">🗑 Del</button>` : ''}
+            ${isSynced ? `<span class="badge badge-pend">⏳ ${ratedCount}/${g.participants.length}</span>` : ''}
+            ${ME.isAdmin === true && !isSynced ? `<button class="btn btn-danger btn-sm" onclick="deleteGame(${g.id})" title="Delete game &amp; reverse ELO">🗑 Del</button>` : ''}
           </div>
         </div>
 
         ${md?.playerStats ? `
           <table class="stat-table">
             <thead><tr>
-              <th>Player</th><th>Agent</th><th>K / D / A</th><th>ACS</th><th>ELO</th><th>Bait</th>
+              <th>Player</th><th>Agent</th><th>K / D / A</th><th>ACS</th>
+              ${isSynced ? '' : '<th>ELO</th><th>Bait</th>'}
             </tr></thead>
             <tbody>
               ${sorted.map(p => {
@@ -634,8 +680,10 @@ function renderHistory() {
                   <td class="stat-agent">${esc(s.agent)}</td>
                   <td class="stat-kda"><span class="${kdClass}">${s.kills}</span> / ${s.deaths} / ${s.assists}</td>
                   <td class="stat-acs">${s.acs}</td>
-                  <td><span class="${ch >= 0 ? 'chip-pos' : 'chip-neg'}">${ch >= 0 ? '+' : ''}${ch}</span></td>
-                  <td style="color:var(--orange)">${bait != null ? '🔥'.repeat(Math.round(bait)) : '—'}</td>
+                  ${isSynced ? '' : `
+                    <td><span class="${ch >= 0 ? 'chip-pos' : 'chip-neg'}">${ch >= 0 ? '+' : ''}${ch}</span></td>
+                    <td style="color:var(--orange)">${bait != null ? '🔥'.repeat(Math.round(bait)) : '—'}</td>
+                  `}
                 </tr>`;
               }).join('')}
             </tbody>
@@ -646,17 +694,26 @@ function renderHistory() {
               const ch   = Math.round(gv(g.elo_changes, p.id) || 0);
               const avg  = gv(g.avg_ratings, p.id);
               const bait = gv(g.avg_bait, p.id);
-              const stars = avg != null ? '★'.repeat(Math.round(avg)) : '';
+              const stars    = avg  != null ? '★'.repeat(Math.round(avg))  : '';
               const baitFire = bait != null ? '🔥'.repeat(Math.round(bait)) : '';
               return `<div class="chip">
                 <span>${esc(p.name)}</span>
-                ${stars ? `<span class="chip-stars">${stars}</span>` : ''}
+                ${stars    ? `<span class="chip-stars">${stars}</span>` : ''}
                 ${baitFire ? `<span style="font-size:10px">${baitFire}</span>` : ''}
                 <span class="${ch >= 0 ? 'chip-pos' : 'chip-neg'}">${ch >= 0 ? '+' : ''}${ch}</span>
               </div>`;
             }).join('')}
           </div>
         `}
+
+        ${isSynced && iAmInGame ? `
+          <div class="hist-pending">
+            <span class="hist-pending-label">
+              ${iHaveRated ? '✓ You rated · waiting for others' : '⏳ Waiting for your ratings'}
+            </span>
+            ${!iHaveRated ? `<button class="btn btn-primary btn-sm" onclick="openRating(${JSON.stringify(g).replace(/"/g, '&quot;')})">Rate →</button>` : ''}
+          </div>
+        ` : ''}
       </div>`;
   }).join('');
 }
@@ -666,52 +723,77 @@ function renderHistory() {
 // ─────────────────────────────────────────────
 function showModal(id) {
   document.getElementById('overlay').hidden = false;
-  ['rating','newgame','changepass','resetpass','riotid'].forEach(m =>
+  ['rating','changepass','resetpass','riotid'].forEach(m =>
     document.getElementById(`M-${m}`).hidden = (m !== id)
   );
 }
 function closeModals() { document.getElementById('overlay').hidden = true; }
 function overlayBg(e) { if (e.target.id === 'overlay') closeModals(); }
 
-// ── Rating modal
-function openRating() {
-  if (!DATA.pendingGame) return;
-  ratingVals = {};
-  baitVals   = {};
-  const pg     = DATA.pendingGame;
-  const others = pg.participants.map(Number)
+// ── Rating modal — accepts a game object (synced or pending)
+function openRating(game) {
+  // Accept either a game object or a JSON string (from inline onclick)
+  if (typeof game === 'string') {
+    try { game = JSON.parse(game); } catch(e) { return; }
+  }
+  ratingVals   = {};
+  baitVals     = {};
+  ratingGameId = game.id;
+
+  const others = game.participants.map(Number)
     .filter(id => id !== Number(ME.id))
     .map(id => DATA.players.find(p => Number(p.id) === id))
     .filter(Boolean);
+
+  const md      = game.match_data;
+  const myStats = md?.playerStats ? gv(md.playerStats, ME.id) : null;
+
   document.getElementById('rating-body').innerHTML = `
-    <div style="margin-bottom:16px">
-      <span class="badge ${pg.won ? 'badge-win' : 'badge-loss'}" style="font-size:13px;padding:4px 14px">
-        ${pg.won ? '🏆 VICTORY' : '💀 DEFEAT'}
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <span class="badge ${game.won ? 'badge-win' : 'badge-loss'}" style="font-size:13px;padding:4px 14px">
+        ${game.won ? '🏆 VICTORY' : '💀 DEFEAT'}
       </span>
+      ${md?.map   ? `<span style="font-size:14px;font-weight:700">${esc(md.map)}</span>` : ''}
+      ${md?.score ? `<span style="font-size:13px;color:var(--dim)">${esc(md.score)}</span>` : ''}
     </div>
+    ${myStats ? `
+      <div style="font-size:12px;color:var(--dim);background:var(--card2);padding:8px 12px;border-radius:6px;margin-bottom:14px">
+        Your game: <strong style="color:var(--text)">${esc(myStats.agent)}</strong> ·
+        K/D/A <strong style="color:var(--text)">${myStats.kills}/${myStats.deaths}/${myStats.assists}</strong> ·
+        ACS <strong style="color:var(--orange)">${myStats.acs}</strong>
+      </div>
+    ` : ''}
     <div class="modal-label">Rate performance 1–5 ★ and bait level 1–5 🔥</div>
-    ${others.map(p => `
-      <div class="rate-row" style="flex-direction:column;align-items:flex-start;gap:8px">
-        <span class="rate-name">${esc(p.name)}</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);width:42px">Perf</span>
-          <div class="stars" id="st-${p.id}">
-            ${[1,2,3,4,5].map(n =>
-              `<span class="star" onclick="setRating(${p.id},${n})" onmouseover="hoverStar(${p.id},${n})" onmouseout="unhoverStar(${p.id})">★</span>`
-            ).join('')}
+    ${others.map(p => {
+      const ps = md?.playerStats ? gv(md.playerStats, p.id) : null;
+      return `
+        <div class="rate-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap">
+            <span class="rate-name">${esc(p.name)}</span>
+            ${ps ? `<span style="font-size:11px;color:var(--dim)">${esc(ps.agent)} · ${ps.kills}/${ps.deaths}/${ps.assists} · ${ps.acs} ACS</span>` : ''}
           </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;padding-bottom:4px">
-          <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--orange);width:42px">Bait</span>
-          <div class="stars" id="bt-${p.id}">
-            ${[1,2,3,4,5].map(n =>
-              `<span class="star" style="font-size:22px" onclick="setBait(${p.id},${n})" onmouseover="hoverBait(${p.id},${n})" onmouseout="unhoverBait(${p.id})">🔥</span>`
-            ).join('')}
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);width:42px">Perf</span>
+            <div class="stars" id="st-${p.id}">
+              ${[1,2,3,4,5].map(n =>
+                `<span class="star" onclick="setRating(${p.id},${n})" onmouseover="hoverStar(${p.id},${n})" onmouseout="unhoverStar(${p.id})">★</span>`
+              ).join('')}
+            </div>
           </div>
-        </div>
-      </div>`).join('')}`;
+          <div style="display:flex;align-items:center;gap:8px;padding-bottom:4px">
+            <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--orange);width:42px">Bait</span>
+            <div class="stars" id="bt-${p.id}">
+              ${[1,2,3,4,5].map(n =>
+                `<span class="star" style="font-size:22px" onclick="setBait(${p.id},${n})" onmouseover="hoverBait(${p.id},${n})" onmouseout="unhoverBait(${p.id})">🔥</span>`
+              ).join('')}
+            </div>
+          </div>
+        </div>`;
+    }).join('')}`;
+
   showModal('rating');
 }
+
 function setRating(pid, n) {
   ratingVals[pid] = n;
   const c = document.getElementById(`st-${pid}`);
@@ -733,162 +815,50 @@ function unhoverStar(pid) {
 function setBait(pid, n) {
   baitVals[pid] = n;
   const c = document.getElementById(`bt-${pid}`);
-  if (c) c.querySelectorAll('.star').forEach((s, i) => {
-    s.style.opacity = i < n ? '1' : '0.25';
-  });
+  if (c) c.querySelectorAll('.star').forEach((s, i) => { s.style.opacity = i < n ? '1' : '0.25'; });
 }
 function hoverBait(pid, n) {
   const c = document.getElementById(`bt-${pid}`);
   if (c) c.querySelectorAll('.star').forEach((s, i) => {
-    s.style.opacity = i < n ? '1' : '0.25';
-    s.style.transform = i < n ? 'scale(1.15)' : '';
+    s.style.opacity = i < n ? '1' : '0.25'; s.style.transform = i < n ? 'scale(1.15)' : '';
   });
 }
 function unhoverBait(pid) {
   const c = document.getElementById(`bt-${pid}`); if (!c) return;
   const n = baitVals[pid] || 0;
-  c.querySelectorAll('.star').forEach((s, i) => {
-    s.style.opacity = i < n ? '1' : '0.25';
-    s.style.transform = '';
-  });
+  c.querySelectorAll('.star').forEach((s, i) => { s.style.opacity = i < n ? '1' : '0.25'; s.style.transform = ''; });
 }
+
 async function submitRatings() {
-  const pg     = DATA.pendingGame;
-  const others = pg.participants.map(Number).filter(id => id !== Number(ME.id));
+  const game = DATA.syncedGames.find(g => Number(g.id) === Number(ratingGameId))
+            || (DATA.pendingGame?.id === ratingGameId ? DATA.pendingGame : null);
+  if (!game) return;
+
+  const others = game.participants.map(Number).filter(id => id !== Number(ME.id));
   for (const id of others) {
     if (!ratingVals[id]) { toast('Rate all players before submitting', true); return; }
     if (!baitVals[id])   { toast('Rate bait score for all players', true); return; }
   }
   try {
-    const res = await api('POST', '/api/game/rate', { gameId: pg.id, ratings: ratingVals, baitRatings: baitVals });
+    const res = await api('POST', '/api/game/rate', {
+      gameId: Number(ratingGameId), ratings: ratingVals, baitRatings: baitVals
+    });
     closeModals();
     toast(res.finalized ? '🏆 All rated — ELO updated!' : '✓ Ratings submitted!');
     await fetchState();
   } catch (e) { toast(e.message, true); }
 }
 
-// ── New game modal
-function openNewGame() {
-  ngParticipants = new Set();
-  ngWon = null;
-  ngMatchData = null;
-  document.getElementById('newgame-body').innerHTML = `
-    <div style="margin-bottom:14px">
-      <button id="ng-sync-btn" class="btn btn-secondary btn-full" onclick="syncMatch()">🔄 Auto-fill from Valorant</button>
-      <div style="font-size:11px;color:var(--dim);text-align:center;margin-top:5px">Fetches your group's last match — also saves K/D/A &amp; map to history</div>
-    </div>
-    <hr class="modal-divider" style="margin-bottom:14px">
-    <div class="modal-label">Or select manually who played this match</div>
-    <div class="sel-row">
-      <span class="sel-link" onclick="ngSelAll(true)">Select all</span>
-      <span class="sel-link" onclick="ngSelAll(false)">Clear</span>
-    </div>
-    <div id="ng-players">
-      ${DATA.players.map(p => `
-        <div class="pcheck" id="ngp-${p.id}" onclick="ngToggle(${p.id})">
-          <div class="check-box" id="ngc-${p.id}"></div>
-          <span class="pcheck-name">${esc(p.name)}</span>
-          <span class="pcheck-elo">${p.elo}</span>
-        </div>`).join('')}
-    </div>
-    <div style="margin-top:16px">
-      <div class="modal-label">Result</div>
-      <div class="outcome-grid">
-        <button id="ng-win"  class="out-btn win"  onclick="ngSetWon(true)">🏆 WIN</button>
-        <button id="ng-loss" class="out-btn loss" onclick="ngSetWon(false)">💀 LOSS</button>
-      </div>
-    </div>
-    <div style="font-size:12px;color:var(--dim);margin-top:10px" id="ng-count">0 selected</div>`;
-  showModal('newgame');
-}
-function ngToggle(id) {
-  ngParticipants.has(id) ? ngParticipants.delete(id) : ngParticipants.add(id);
-  const wrap = document.getElementById(`ngp-${id}`);
-  const box  = document.getElementById(`ngc-${id}`);
-  if (wrap) wrap.classList.toggle('sel', ngParticipants.has(id));
-  if (box)  box.textContent = ngParticipants.has(id) ? '✓' : '';
-  document.getElementById('ng-count').textContent = `${ngParticipants.size} selected (min 2)`;
-}
-function ngSelAll(v) {
-  DATA.players.forEach(p => {
-    if (v) ngParticipants.add(p.id); else ngParticipants.delete(p.id);
-    const wrap = document.getElementById(`ngp-${p.id}`);
-    const box  = document.getElementById(`ngc-${p.id}`);
-    if (wrap) wrap.classList.toggle('sel', v);
-    if (box)  box.textContent = v ? '✓' : '';
-  });
-  document.getElementById('ng-count').textContent = `${ngParticipants.size} selected (min 2)`;
-}
-function ngSetWon(v) {
-  ngWon = v;
-  document.getElementById('ng-win').classList.toggle('sel',  v === true);
-  document.getElementById('ng-loss').classList.toggle('sel', v === false);
-}
-
-async function syncMatch() {
-  const btn = document.getElementById('ng-sync-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spin">⟳</span> Syncing...';
-  try {
-    const result = await api('GET', '/api/match/sync');
-    ngMatchData = {
-      map:         result.map,
-      mode:        result.mode,
-      score:       result.score,
-      playerStats: result.playerStats,
-      matchId:     result.matchId,
-    };
-    // Clear + re-select participants
-    ngParticipants = new Set();
-    DATA.players.forEach(p => {
-      const wrap = document.getElementById(`ngp-${p.id}`);
-      const box  = document.getElementById(`ngc-${p.id}`);
-      if (wrap) wrap.classList.remove('sel');
-      if (box)  box.textContent = '';
-    });
-    for (const p of result.participants) {
-      ngParticipants.add(p.id);
-      const wrap = document.getElementById(`ngp-${p.id}`);
-      const box  = document.getElementById(`ngc-${p.id}`);
-      if (wrap) wrap.classList.add('sel');
-      if (box)  box.textContent = '✓';
-    }
-    ngSetWon(result.won);
-    const label = result.map !== 'Unknown' ? ` · ${result.map} ${result.score}` : '';
-    document.getElementById('ng-count').textContent = `${ngParticipants.size} players synced${label}`;
-    toast(`✓ Synced! ${result.participants.length} players · ${result.map}`);
-  } catch (e) {
-    toast(e.message, true);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '🔄 Auto-fill from Valorant';
-  }
-}
-
-async function submitNewGame() {
-  if (ngParticipants.size < 2) { toast('Select at least 2 players', true); return; }
-  if (ngWon === null)           { toast('Select Win or Loss', true); return; }
-  try {
-    await api('POST', '/api/game/create', {
-      participants: [...ngParticipants].map(Number),
-      won: ngWon,
-      matchData: ngMatchData || null,
-    });
-    closeModals();
-    toast('Game posted! Players can now rate.');
-    await fetchState();
-  } catch (e) { toast(e.message, true); }
-}
-
 // ── Admin actions
-async function forceFinalize() {
+async function forceFinalize(gameId) {
   if (!confirm('Force finalize? Players who haven\'t rated get a neutral score.')) return;
   try {
-    await api('POST', '/api/game/finalize', {});
+    await api('POST', `/api/game/${gameId}/force-finalize`, {});
     toast('🏆 Game finalized — ELO updated!');
     await fetchState();
   } catch (e) { toast(e.message, true); }
 }
+
 async function cancelGame() {
   if (!confirm('Cancel this game? Ratings lost, ELO unchanged.')) return;
   try {
@@ -897,6 +867,16 @@ async function cancelGame() {
     await fetchState();
   } catch (e) { toast(e.message, true); }
 }
+
+async function deleteSyncedGame(id) {
+  if (!confirm('Remove this synced game? No ELO was calculated yet.')) return;
+  try {
+    await api('DELETE', `/api/game/${id}/active`);
+    toast('Game removed.');
+    await fetchState();
+  } catch (e) { toast(e.message, true); }
+}
+
 async function deleteGame(id) {
   if (!confirm('Delete this game? All ELO changes will be reversed.')) return;
   try {
@@ -989,8 +969,7 @@ async function submitAdminRiotId() {
 function showApp() {
   document.getElementById('P-login').hidden = true;
   document.getElementById('P-app').hidden   = false;
-  document.getElementById('headerUser').textContent = ME.name;
-  document.getElementById('btnNewGame').hidden   = !ME.isAdmin;
+  document.getElementById('headerUser').textContent  = ME.name;
   document.getElementById('btnResetPass').hidden = !ME.isAdmin;
   startPolling();
 }
