@@ -508,6 +508,40 @@ app.post('/api/player/riot-id/admin', auth, adminOnly, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ELO history — replays all completed games from 50 to build per-player timeline
+app.get('/api/elo-history', auth, async (req, res) => {
+  try {
+    const { rows: players } = await pool.query('SELECT id, name FROM players ORDER BY id');
+    const { rows: games }   = await pool.query(
+      "SELECT elo_changes, game_date, completed_at FROM games WHERE status = 'complete' ORDER BY completed_at ASC"
+    );
+
+    const elo = {};
+    for (const p of players) elo[p.id] = 50;
+
+    const labels  = ['Start'];
+    const series  = {}; // id → [elo values]
+    for (const p of players) series[p.id] = [50];
+
+    for (const g of games) {
+      for (const [pid, change] of Object.entries(g.elo_changes || {})) {
+        const id = Number(pid);
+        if (elo[id] == null) elo[id] = 50;
+        elo[id] = Math.max(1, Math.min(100, elo[id] + Number(change)));
+      }
+      const label = g.game_date ||
+        new Date(g.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      labels.push(label);
+      for (const p of players) series[p.id].push(elo[p.id] ?? 50);
+    }
+
+    res.json({ players, labels, series });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Temporary debug route — admin only, returns raw v4 response for first player
 app.get('/api/debug/v4-sample', auth, adminOnly, async (req, res) => {
   const { rows } = await pool.query("SELECT * FROM players WHERE riot_id IS NOT NULL AND riot_id LIKE '%#%' LIMIT 1");

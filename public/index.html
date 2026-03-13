@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VAL·ELO</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     [hidden] { display: none !important; }
@@ -265,6 +266,16 @@
 
     </div>
 
+    <!-- ELO Timeline Graph -->
+    <div class="card" id="elo-graph-card" style="margin-bottom:22px">
+      <div class="card-header">
+        <span class="card-label">ELO Timeline</span>
+      </div>
+      <div style="padding:16px 20px">
+        <canvas id="elo-chart" style="max-height:260px"></canvas>
+      </div>
+    </div>
+
     <div class="two-col">
 
       <!-- LEFT: Leaderboard -->
@@ -394,6 +405,9 @@ let ratingVals = {};
 let baitVals   = {};
 let ratingGameId = null; // which game is currently being rated
 
+let eloChart          = null;
+let eloChartGameCount = -1; // re-fetch only when game count changes
+
 // ─────────────────────────────────────────────
 // API HELPER
 // ─────────────────────────────────────────────
@@ -489,6 +503,46 @@ function renderAll() {
   renderAdminPanel();
   renderLeaderboard();
   renderHistory();
+  renderEloGraph();
+}
+
+const GRAPH_COLORS = ['#ff4655','#4caf50','#ff9c3f','#a78bfa','#3b82f6','#ffd700','#06b6d4'];
+
+async function renderEloGraph() {
+  const gameCount = DATA?.games?.length ?? 0;
+  if (gameCount === eloChartGameCount && eloChart) return; // nothing changed
+  eloChartGameCount = gameCount;
+  try {
+    const d = await api('GET', '/api/elo-history');
+    const datasets = d.players.map((p, i) => ({
+      label:           p.name,
+      data:            d.series[p.id],
+      borderColor:     GRAPH_COLORS[i % GRAPH_COLORS.length],
+      backgroundColor: 'transparent',
+      tension:         0.35,
+      pointRadius:     d.labels.length > 20 ? 2 : 4,
+      borderWidth:     2,
+    }));
+    const ctx = document.getElementById('elo-chart').getContext('2d');
+    if (eloChart) eloChart.destroy();
+    eloChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: d.labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { color: '#ece8e1', font: { size: 11 }, boxWidth: 12 } },
+          tooltip: { backgroundColor: '#1a2332', borderColor: '#2a3a4a', borderWidth: 1 }
+        },
+        scales: {
+          x: { ticks: { color: '#7a8fa6', font: { size: 10 }, maxRotation: 45 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { min: 1, max: 100, ticks: { color: '#7a8fa6', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } }
+        }
+      }
+    });
+  } catch (e) { console.error('ELO graph:', e); }
 }
 
 function renderBanners() {
