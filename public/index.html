@@ -427,6 +427,7 @@ let ngWon = null;
 let ngMatchData = null;   // full match data from Henrik API sync
 
 let ratingVals = {};
+let baitVals   = {};
 
 // ─────────────────────────────────────────────
 // API HELPER
@@ -611,18 +612,20 @@ function renderHistory() {
           <div class="hist-right">
             ${md?.score ? `<span class="hist-score">${esc(md.score)}</span>` : ''}
             <span class="badge ${g.won ? 'badge-win' : 'badge-loss'}">${g.won ? 'WIN' : 'LOSS'}</span>
+            ${ME.isAdmin === true ? `<button class="btn btn-danger btn-sm" onclick="deleteGame(${g.id})" title="Delete game &amp; reverse ELO">🗑 Del</button>` : ''}
           </div>
         </div>
 
         ${md?.playerStats ? `
           <table class="stat-table">
             <thead><tr>
-              <th>Player</th><th>Agent</th><th>K / D / A</th><th>ACS</th><th>ELO</th>
+              <th>Player</th><th>Agent</th><th>K / D / A</th><th>ACS</th><th>ELO</th><th>Bait</th>
             </tr></thead>
             <tbody>
               ${sorted.map(p => {
-                const s  = gv(md.playerStats, p.id);
-                const ch = Math.round(gv(g.elo_changes, p.id) || 0);
+                const s    = gv(md.playerStats, p.id);
+                const ch   = Math.round(gv(g.elo_changes, p.id) || 0);
+                const bait = gv(g.avg_bait, p.id);
                 if (!s) return '';
                 const kd = s.deaths > 0 ? (s.kills / s.deaths).toFixed(2) : s.kills.toFixed(2);
                 const kdClass = parseFloat(kd) >= 1.2 ? 'kd-good' : parseFloat(kd) < 0.85 ? 'kd-bad' : 'kd-even';
@@ -632,6 +635,7 @@ function renderHistory() {
                   <td class="stat-kda"><span class="${kdClass}">${s.kills}</span> / ${s.deaths} / ${s.assists}</td>
                   <td class="stat-acs">${s.acs}</td>
                   <td><span class="${ch >= 0 ? 'chip-pos' : 'chip-neg'}">${ch >= 0 ? '+' : ''}${ch}</span></td>
+                  <td style="color:var(--orange)">${bait != null ? '🔥'.repeat(Math.round(bait)) : '—'}</td>
                 </tr>`;
               }).join('')}
             </tbody>
@@ -639,12 +643,15 @@ function renderHistory() {
         ` : `
           <div class="hist-chips">
             ${ps.map(p => {
-              const ch  = Math.round(gv(g.elo_changes, p.id) || 0);
-              const avg = gv(g.avg_ratings, p.id);
+              const ch   = Math.round(gv(g.elo_changes, p.id) || 0);
+              const avg  = gv(g.avg_ratings, p.id);
+              const bait = gv(g.avg_bait, p.id);
               const stars = avg != null ? '★'.repeat(Math.round(avg)) : '';
+              const baitFire = bait != null ? '🔥'.repeat(Math.round(bait)) : '';
               return `<div class="chip">
                 <span>${esc(p.name)}</span>
                 ${stars ? `<span class="chip-stars">${stars}</span>` : ''}
+                ${baitFire ? `<span style="font-size:10px">${baitFire}</span>` : ''}
                 <span class="${ch >= 0 ? 'chip-pos' : 'chip-neg'}">${ch >= 0 ? '+' : ''}${ch}</span>
               </div>`;
             }).join('')}
@@ -670,6 +677,7 @@ function overlayBg(e) { if (e.target.id === 'overlay') closeModals(); }
 function openRating() {
   if (!DATA.pendingGame) return;
   ratingVals = {};
+  baitVals   = {};
   const pg     = DATA.pendingGame;
   const others = pg.participants.map(Number)
     .filter(id => id !== Number(ME.id))
@@ -681,14 +689,25 @@ function openRating() {
         ${pg.won ? '🏆 VICTORY' : '💀 DEFEAT'}
       </span>
     </div>
-    <div class="modal-label">Rate 1–5 stars. 1 = rough game, 5 = carried hard.</div>
+    <div class="modal-label">Rate performance 1–5 ★ and bait level 1–5 🔥</div>
     ${others.map(p => `
-      <div class="rate-row">
+      <div class="rate-row" style="flex-direction:column;align-items:flex-start;gap:8px">
         <span class="rate-name">${esc(p.name)}</span>
-        <div class="stars" id="st-${p.id}">
-          ${[1,2,3,4,5].map(n =>
-            `<span class="star" onclick="setRating(${p.id},${n})" onmouseover="hoverStar(${p.id},${n})" onmouseout="unhoverStar(${p.id})">★</span>`
-          ).join('')}
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);width:42px">Perf</span>
+          <div class="stars" id="st-${p.id}">
+            ${[1,2,3,4,5].map(n =>
+              `<span class="star" onclick="setRating(${p.id},${n})" onmouseover="hoverStar(${p.id},${n})" onmouseout="unhoverStar(${p.id})">★</span>`
+            ).join('')}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding-bottom:4px">
+          <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--orange);width:42px">Bait</span>
+          <div class="stars" id="bt-${p.id}">
+            ${[1,2,3,4,5].map(n =>
+              `<span class="star" style="font-size:22px" onclick="setBait(${p.id},${n})" onmouseover="hoverBait(${p.id},${n})" onmouseout="unhoverBait(${p.id})">🔥</span>`
+            ).join('')}
+          </div>
         </div>
       </div>`).join('')}`;
   showModal('rating');
@@ -711,14 +730,37 @@ function unhoverStar(pid) {
     s.style.color = ''; s.style.transform = ''; s.classList.toggle('filled', i < n);
   });
 }
+function setBait(pid, n) {
+  baitVals[pid] = n;
+  const c = document.getElementById(`bt-${pid}`);
+  if (c) c.querySelectorAll('.star').forEach((s, i) => {
+    s.style.opacity = i < n ? '1' : '0.25';
+  });
+}
+function hoverBait(pid, n) {
+  const c = document.getElementById(`bt-${pid}`);
+  if (c) c.querySelectorAll('.star').forEach((s, i) => {
+    s.style.opacity = i < n ? '1' : '0.25';
+    s.style.transform = i < n ? 'scale(1.15)' : '';
+  });
+}
+function unhoverBait(pid) {
+  const c = document.getElementById(`bt-${pid}`); if (!c) return;
+  const n = baitVals[pid] || 0;
+  c.querySelectorAll('.star').forEach((s, i) => {
+    s.style.opacity = i < n ? '1' : '0.25';
+    s.style.transform = '';
+  });
+}
 async function submitRatings() {
   const pg     = DATA.pendingGame;
   const others = pg.participants.map(Number).filter(id => id !== Number(ME.id));
   for (const id of others) {
     if (!ratingVals[id]) { toast('Rate all players before submitting', true); return; }
+    if (!baitVals[id])   { toast('Rate bait score for all players', true); return; }
   }
   try {
-    const res = await api('POST', '/api/game/rate', { gameId: pg.id, ratings: ratingVals });
+    const res = await api('POST', '/api/game/rate', { gameId: pg.id, ratings: ratingVals, baitRatings: baitVals });
     closeModals();
     toast(res.finalized ? '🏆 All rated — ELO updated!' : '✓ Ratings submitted!');
     await fetchState();
@@ -852,6 +894,14 @@ async function cancelGame() {
   try {
     await api('POST', '/api/game/cancel', {});
     toast('Game cancelled.');
+    await fetchState();
+  } catch (e) { toast(e.message, true); }
+}
+async function deleteGame(id) {
+  if (!confirm('Delete this game? All ELO changes will be reversed.')) return;
+  try {
+    await api('DELETE', `/api/game/${id}`);
+    toast('Game deleted — ELO reversed.');
     await fetchState();
   } catch (e) { toast(e.message, true); }
 }

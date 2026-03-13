@@ -36,7 +36,10 @@ const adminOnly = (req, res, next) =>
 // ELO ENGINE  (1–100 scale, start 50)
 // ─────────────────────────────────────────────
 
-function calcElo(ids, won, avgRatings) {
+// gamesCounts: { playerId: gamesPlayedBeforeThisGame }
+// K-factor decays as players accumulate games: kMult = max(0.3, 2 / (1 + games * 0.1))
+// New player (0 games) → 2x impact; 10 games → 1x; 50+ games → 0.3x floor
+function calcElo(ids, won, avgRatings, gamesCounts) {
   const N = ids.length;
   if (N < 2) return {};
   const BASE = 2, K = (N - 1);
@@ -55,8 +58,10 @@ function calcElo(ids, won, avgRatings) {
 
   const out = {};
   for (const id of ids) {
-    const perf = ((N - ranks[id]) / (N - 1) * 2 - 1) * K;
-    out[id] = Math.round((won ? BASE : -BASE) + perf);
+    const games = gamesCounts?.[id] ?? 0;
+    const kMult = Math.max(0.3, 2 / (1 + games * 0.1));
+    const perf  = ((N - ranks[id]) / (N - 1) * 2 - 1) * K;
+    out[id] = Math.round(((won ? BASE : -BASE) + perf) * kMult);
   }
   return out;
 }
@@ -71,8 +76,9 @@ async function finalizeGame(gameId) {
   if (!game) throw new Error('Game not found');
 
   const { participants, won, ratings } = game;
+  const baitRatings = game.bait_ratings || {};
 
-  // Average rating each player received from others
+  // Average perf rating each player received from others
   const avgRatings = {};
   for (const pid of participants) {
     const received = [];
@@ -83,10 +89,31 @@ async function finalizeGame(gameId) {
     }
     avgRatings[pid] = received.length > 0
       ? received.reduce((a, b) => a + b, 0) / received.length
-      : 3; // neutral default if nobody rated them
+      : 3;
   }
 
-  const eloChanges = calcElo(participants, won, avgRatings);
+  // Average bait rating each player received from others
+  const avgBait = {};
+  for (const pid of participants) {
+    const received = [];
+    for (const rid of participants) {
+      if (rid === pid) continue;
+      const v = baitRatings[String(rid)]?.[String(pid)];
+      if (v !== undefined) received.push(Number(v));
+    }
+    avgBait[pid] = received.length > 0
+      ? received.reduce((a, b) => a + b, 0) / received.length
+      : null;
+  }
+
+  // Fetch games played BEFORE this game for K-factor decay
+  const gamesCounts = {};
+  for (const pid of participants) {
+    const { rows: pr } = await pool.query('SELECT games FROM players WHERE id = $1', [pid]);
+    gamesCounts[pid] = pr[0]?.games ?? 0;
+  }
+
+  const eloChanges = calcElo(participants, won, avgRatings, gamesCounts);
 
   for (const pid of participants) {
     const change = eloChanges[pid] || 0;
@@ -100,9 +127,9 @@ async function finalizeGame(gameId) {
   await pool.query(
     `UPDATE games
      SET status = 'complete', avg_ratings = $1, elo_changes = $2,
-         pending_raters = '{}', completed_at = NOW()
-     WHERE id = $3`,
-    [avgRatings, eloChanges, gameId]
+         avg_bait = $3, pending_raters = '{}', completed_at = NOW()
+     WHERE id = $4`,
+    [avgRatings, eloChanges, avgBait, gameId]
   );
 }
 
@@ -147,6 +174,8 @@ async function initDB() {
   // Migrations for existing installs
   await pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS riot_id TEXT`);
   await pool.query(`ALTER TABLE games   ADD COLUMN IF NOT EXISTS match_data JSONB`);
+  await pool.query(`ALTER TABLE games   ADD COLUMN IF NOT EXISTS bait_ratings JSONB DEFAULT '{}'`);
+  await pool.query(`ALTER TABLE games   ADD COLUMN IF NOT EXISTS avg_bait JSONB`);
   await pool.query(`UPDATE players SET elo = 50 WHERE elo = 1000 AND games = 0`);
 
   const { rows } = await pool.query('SELECT COUNT(*) AS c FROM players');
@@ -254,7 +283,7 @@ app.post('/api/game/create', auth, adminOnly, async (req, res) => {
 // Submit ratings
 app.post('/api/game/rate', auth, async (req, res) => {
   try {
-    const { gameId, ratings } = req.body;
+    const { gameId, ratings, baitRatings = {} } = req.body;
     const raterId = req.user.id;
 
     const { rows } = await pool.query(
@@ -265,23 +294,31 @@ app.post('/api/game/rate', auth, async (req, res) => {
     if (!game.participants.includes(raterId)) return res.status(403).json({ error: 'You were not in this game' });
     if (game.ratings[String(raterId)])     return res.status(400).json({ error: 'You already submitted ratings' });
 
-    // Validate: must rate every other participant 1–5
+    // Validate: must rate every other participant 1–5 for both perf and bait
     const others = game.participants.filter(id => id !== raterId);
     for (const oid of others) {
       const s = ratings[oid] ?? ratings[String(oid)];
       if (!s || s < 1 || s > 5)
         return res.status(400).json({ error: 'Please rate all players 1–5 stars' });
+      const b = baitRatings[oid] ?? baitRatings[String(oid)];
+      if (!b || b < 1 || b > 5)
+        return res.status(400).json({ error: 'Please rate bait score for all players 1–5' });
     }
 
     const newRatings = { ...game.ratings, [String(raterId)]: {} };
     for (const oid of others)
       newRatings[String(raterId)][String(oid)] = Number(ratings[oid] ?? ratings[String(oid)]);
 
+    const prevBait = game.bait_ratings || {};
+    const newBaitRatings = { ...prevBait, [String(raterId)]: {} };
+    for (const oid of others)
+      newBaitRatings[String(raterId)][String(oid)] = Number(baitRatings[oid] ?? baitRatings[String(oid)]);
+
     const newPending = game.pending_raters.filter(id => id !== raterId);
 
     await pool.query(
-      'UPDATE games SET ratings = $1, pending_raters = $2 WHERE id = $3',
-      [newRatings, newPending, game.id]
+      'UPDATE games SET ratings = $1, pending_raters = $2, bait_ratings = $3 WHERE id = $4',
+      [newRatings, newPending, newBaitRatings, game.id]
     );
 
     if (newPending.length === 0) {
@@ -353,6 +390,39 @@ app.post('/api/player/riot-id/admin', auth, adminOnly, async (req, res) => {
   const r = await pool.query('UPDATE players SET riot_id = $1 WHERE id = $2', [riotId.trim().replace(/\s*#\s*/, '#'), Number(playerId)]);
   if (r.rowCount === 0) return res.status(404).json({ error: 'Player not found' });
   res.json({ ok: true });
+});
+
+// Admin: delete a completed game and reverse its ELO changes
+app.delete('/api/game/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const gameId = Number(req.params.id);
+    const { rows } = await pool.query(
+      "SELECT * FROM games WHERE id = $1 AND status = 'complete'", [gameId]
+    );
+    const game = rows[0];
+    if (!game) return res.status(404).json({ error: 'Completed game not found' });
+
+    const { participants, won, elo_changes } = game;
+    const col = won ? 'wins' : 'losses';
+
+    for (const pid of participants) {
+      const change = Math.round(Number(elo_changes?.[String(pid)] ?? elo_changes?.[pid] ?? 0));
+      await pool.query(
+        `UPDATE players
+         SET elo    = GREATEST(1, LEAST(100, elo - $1)),
+             games  = GREATEST(0, games - 1),
+             ${col} = GREATEST(0, ${col} - 1)
+         WHERE id = $2`,
+        [change, pid]
+      );
+    }
+
+    await pool.query('DELETE FROM games WHERE id = $1', [gameId]);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Admin: sync last match from Henrik Dev API
