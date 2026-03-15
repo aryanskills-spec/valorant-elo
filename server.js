@@ -143,7 +143,7 @@ async function finalizeGame(gameId) {
     const change = eloChanges[pid] || 0;
     const col    = won ? 'wins' : 'losses';
     await pool.query(
-      `UPDATE players SET elo = GREATEST(1, LEAST(100, elo + $1)), games = games + 1, ${col} = ${col} + 1 WHERE id = $2`,
+      `UPDATE players SET elo = GREATEST(1, elo + $1), games = games + 1, ${col} = ${col} + 1 WHERE id = $2`,
       [change, pid]
     );
   }
@@ -451,7 +451,7 @@ app.delete('/api/game/:id', auth, adminOnly, async (req, res) => {
       const change = Math.round(Number(elo_changes?.[String(pid)] ?? elo_changes?.[pid] ?? 0));
       await pool.query(
         `UPDATE players
-         SET elo    = GREATEST(1, LEAST(100, elo - $1)),
+         SET elo    = GREATEST(1, elo - $1),
              games  = GREATEST(0, games - 1),
              ${col} = GREATEST(0, ${col} - 1)
          WHERE id = $2`,
@@ -552,7 +552,7 @@ async function runFullRecalc() {
     for (const pid of participants) {
       const change = eloChanges[pid] || 0;
       await pool.query(
-        `UPDATE players SET elo = GREATEST(1, LEAST(100, elo + $1)), games = games + 1, ${col} = ${col} + 1 WHERE id = $2`,
+        `UPDATE players SET elo = GREATEST(1, elo + $1), games = games + 1, ${col} = ${col} + 1 WHERE id = $2`,
         [change, pid]
       );
       gamesCounts[pid] = (gamesCounts[pid] ?? 0) + 1;
@@ -617,7 +617,7 @@ app.get('/api/elo-history', auth, async (req, res) => {
       for (const [pid, change] of Object.entries(g.elo_changes || {})) {
         const id = Number(pid);
         if (elo[id] == null) elo[id] = 50;
-        elo[id] = Math.max(1, Math.min(100, elo[id] + Number(change)));
+        elo[id] = Math.max(1, elo[id] + Number(change));
       }
       const label = g.game_date ||
         new Date(g.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
